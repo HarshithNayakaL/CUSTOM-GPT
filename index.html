@@ -10,56 +10,66 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..125,400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Geist+Mono:wght@400..600&family=Geist:wght@300..800&display=swap">
 
   <style>
-    /* ══ tokens ══════════════════════════════════════════════════════════
-       Colour carries one meaning in this interface: which lane answered.
-       Chrome is graphite and ice; the three cable hues are never decorative. */
+    /* ══ tokens ════════════════════════════════════════════════════════
+       One rule holds the palette together: a saturated hue means a lane.
+       Lane colour is always a filled block with near-black text, so the
+       same three hues hold up in either theme without restating them. */
     :root {
-      --void: #0B1015;
-      --panel: #111A21;
-      --panel-2: #17222B;
-      --panel-3: #1E2C37;
-      --edge: #253440;
-      /* Recessed groove behind every meter. Must read as *unlit* in both
-         themes — a white track on a pale panel looks like a full reading. */
-      --track: #202E39;
-      --ink: #E4ECF2;
-      --ink-2: #8A9BA8;
-      --ink-3: #5C6D7A;
-      --lamp-1: #35E0C4;
-      --lamp-2: #FFB454;
-      --lamp-3: #9584FF;
-      --danger: #FF6B6B;
-      --glow: 0.35;
+      --l1: #00E599;
+      --l2: #FFC53D;
+      --l3: #A08CFF;
+      --alert: #FF5C41;
+      --on-lane: #0A0A0C;
 
-      --display: "Anybody", "Arial Narrow", sans-serif;
-      --body: "Instrument Sans", system-ui, sans-serif;
-      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --bg: #0A0A0C;
+      --surface: #131316;
+      --surface-2: #1B1B20;
+      --surface-3: #24242B;
+      --line: #2A2A32;
+      --fg: #F5F2EC;
+      --fg-2: #A3A0AB;
+      --fg-3: #6E6B77;
 
-      --rail-w: 264px;
-      --scope-w: 296px;
-      --snap: 140ms cubic-bezier(.2, .7, .3, 1);
-      --lift: 0 18px 44px -16px rgba(0, 0, 0, .7);
+      --display: "Bricolage Grotesque", "Arial Black", sans-serif;
+      --sans: "Geist", system-ui, -apple-system, sans-serif;
+      --mono: "Geist Mono", ui-monospace, monospace;
+
+      /* Fluid scale — one declaration per role, no breakpoint overrides. */
+      --t-hero: clamp(2.5rem, 1.2rem + 5.6vw, 5rem);
+      --t-xl: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+      --t-lg: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+      --t-md: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+      --t-sm: 0.875rem;
+      --t-xs: 0.8125rem;
+      --t-mono: 0.75rem;
+
+      --r-xl: 26px;
+      --r-lg: 18px;
+      --r-md: 12px;
+      --r-pill: 999px;
+
+      --rail-w: 276px;
+      --scope-w: 312px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --snap: 160ms var(--ease);
+      --lift: 0 24px 60px -20px rgba(0, 0, 0, .65);
     }
 
     :root[data-theme="light"] {
-      --void: #D9E1E7;
-      --panel: #E9EFF3;
-      --panel-2: #F4F7F9;
-      --panel-3: #FFFFFF;
-      --edge: #C0CDD7;
-      --track: #CBD6DE;
-      --ink: #0B1319;
-      --ink-2: #51636E;
-      --ink-3: #7A8C97;
-      --lamp-1: #00887A;
-      --lamp-2: #9C5E06;
-      --lamp-3: #5644CE;
-      --danger: #C4342F;
-      --glow: 0.14;
-      --lift: 0 18px 44px -20px rgba(20, 40, 60, .35);
+      --bg: #E9E5DB;
+      --surface: #FFFFFF;
+      --surface-2: #F5F2EA;
+      --surface-3: #EAE5D9;
+      --line: #D6D0C2;
+      --fg: #111013;
+      --fg-2: #56535E;
+      --fg-3: #86828F;
+      --l1: #00C482;
+      --alert: #E23F22;
+      --lift: 0 24px 60px -24px rgba(40, 34, 20, .3);
     }
 
     * {
@@ -75,44 +85,67 @@
     }
 
     body {
-      background: var(--void);
-      color: var(--ink);
-      font-family: var(--body);
-      font-size: 15px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      font-size: var(--t-md);
       line-height: 1.6;
+      letter-spacing: -0.011em;
       -webkit-font-smoothing: antialiased;
     }
 
     :focus-visible {
-      outline: 2px solid var(--lane-hue, var(--lamp-2));
-      outline-offset: 2px;
-      border-radius: 3px;
+      outline: 2px solid var(--lane, var(--fg));
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer;
     }
 
     ::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
     }
 
     ::-webkit-scrollbar-thumb {
-      background: var(--edge);
-      border: 3px solid transparent;
+      background: var(--surface-3);
+      border: 4px solid transparent;
       background-clip: content-box;
-      border-radius: 10px;
+      border-radius: 12px;
     }
 
-    ::-webkit-scrollbar-track {
-      background: transparent;
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-3);
+      background-clip: content-box;
     }
 
-    /* Small caps engraving used on every hardware-style label. */
-    .stamp {
+    .ic {
+      flex: none;
+      display: block;
+    }
+
+    /* Data labels. Used sparingly — this is the only uppercase in the UI. */
+    .tag {
       font-family: var(--mono);
-      font-size: 9.5px;
-      font-weight: 700;
-      letter-spacing: .16em;
+      font-size: var(--t-mono);
+      font-weight: 500;
+      letter-spacing: .06em;
       text-transform: uppercase;
-      color: var(--ink-3);
+      color: var(--fg-3);
+    }
+
+    .h-display {
+      font-family: var(--display);
+      font-variation-settings: "wdth" 92, "opsz" 40;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1.05;
     }
 
     /* ══ shell ══════════════════════════════════════════════════════════ */
@@ -120,147 +153,149 @@
       display: grid;
       grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--scope-w);
       height: 100%;
+      gap: 10px;
+      padding: 10px;
     }
 
     .shell[data-scope="off"] {
-      grid-template-columns: var(--rail-w) minmax(0, 1fr) 0;
+      grid-template-columns: var(--rail-w) minmax(0, 1fr);
     }
 
-    /* ══ rail (threads) ═════════════════════════════════════════════════ */
-    .rail {
-      background: var(--panel);
-      border-right: 1px solid var(--edge);
+    .pane {
+      background: var(--surface);
+      border-radius: var(--r-xl);
+      min-height: 0;
       display: flex;
       flex-direction: column;
-      min-height: 0;
+    }
+
+    /* ══ rail ═══════════════════════════════════════════════════════════ */
+    .rail {
       z-index: 40;
     }
 
     .rail-top {
-      padding: 18px 16px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      padding: 20px 18px 14px;
     }
 
     .mark {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
       font-family: var(--display);
-      font-variation-settings: "wdth" 88;
+      font-variation-settings: "wdth" 88, "opsz" 24;
       font-weight: 800;
-      font-size: 17px;
-      letter-spacing: .04em;
-      text-transform: uppercase;
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
     }
 
-    /* Three stacked cables — the product in one glyph. */
+    /* Three cables, one glyph. */
     .mark-glyph {
-      width: 22px;
-      height: 22px;
-      flex: none;
+      width: 26px;
+      height: 26px;
     }
 
-    .btn-new {
-      margin: 0 16px 12px;
-      padding: 10px 12px;
-      background: var(--panel-3);
-      border: 1px solid var(--edge);
-      border-radius: 7px;
-      color: var(--ink);
-      font: inherit;
+    .btn-primary {
+      margin: 0 14px 12px;
+      padding: 13px 16px;
+      background: var(--fg);
+      color: var(--bg);
+      border-radius: var(--r-pill);
       font-weight: 600;
-      font-size: 13.5px;
+      font-size: var(--t-sm);
       display: flex;
       align-items: center;
-      gap: 9px;
-      cursor: pointer;
+      justify-content: center;
+      gap: 8px;
       transition: var(--snap);
     }
 
-    .btn-new:hover {
-      border-color: var(--ink-3);
-      background: var(--panel-2);
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      opacity: .9;
     }
 
     .seek {
-      margin: 0 16px 10px;
       position: relative;
+      margin: 0 14px 8px;
       display: flex;
       align-items: center;
     }
 
-    .seek svg {
+    .seek .ic {
       position: absolute;
-      left: 9px;
-      color: var(--ink-3);
+      left: 14px;
+      color: var(--fg-3);
       pointer-events: none;
     }
 
     .seek input {
       width: 100%;
-      padding: 8px 10px 8px 30px;
-      background: var(--void);
-      border: 1px solid var(--edge);
-      border-radius: 7px;
-      color: var(--ink);
+      padding: 11px 14px 11px 40px;
+      background: var(--surface-2);
+      border: none;
+      border-radius: var(--r-pill);
+      color: var(--fg);
       font: inherit;
-      font-size: 13px;
+      font-size: var(--t-sm);
     }
 
     .seek input::placeholder {
-      color: var(--ink-3);
+      color: var(--fg-3);
+    }
+
+    .seek input:focus {
+      outline: none;
+      box-shadow: inset 0 0 0 1.5px var(--line);
     }
 
     .threads {
       flex: 1;
       overflow-y: auto;
-      padding: 4px 10px 10px;
+      padding: 6px 10px 10px;
       min-height: 0;
     }
 
     .group-label {
-      padding: 14px 6px 6px;
+      padding: 14px 8px 6px;
+      display: block;
     }
 
     .thread-row {
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 8px;
-      border-radius: 6px;
-      border: 1px solid transparent;
-      background: none;
-      color: var(--ink-2);
-      font: inherit;
-      font-size: 13.5px;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: var(--r-md);
+      color: var(--fg-2);
+      font-size: var(--t-sm);
       text-align: left;
       cursor: pointer;
       transition: var(--snap);
     }
 
     .thread-row:hover {
-      background: var(--panel-2);
-      color: var(--ink);
+      background: var(--surface-2);
+      color: var(--fg);
     }
 
     .thread-row[aria-current="true"] {
-      background: var(--panel-3);
-      border-color: var(--edge);
-      color: var(--ink);
+      background: var(--surface-2);
+      color: var(--fg);
+      font-weight: 500;
     }
 
-    /* The thread's dominant lane shows as a hairline tick, not a badge. */
-    .thread-tick {
-      width: 2px;
-      height: 15px;
-      border-radius: 2px;
-      background: var(--lane-hue, var(--ink-3));
+    /* The lane this thread mostly ran on, as a single dot. */
+    .thread-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--lane, var(--fg-3));
       flex: none;
-      opacity: .85;
     }
 
     .thread-name {
@@ -272,13 +307,11 @@
 
     .thread-act {
       opacity: 0;
-      background: none;
-      border: none;
-      color: var(--ink-3);
-      cursor: pointer;
-      padding: 2px;
+      color: var(--fg-3);
       display: flex;
-      border-radius: 4px;
+      padding: 3px;
+      border-radius: 6px;
+      transition: var(--snap);
     }
 
     .thread-row:hover .thread-act,
@@ -287,58 +320,55 @@
     }
 
     .thread-act:hover {
-      color: var(--ink);
+      color: var(--fg);
+      background: var(--surface-3);
     }
 
-    .thread-act.pinned {
+    .thread-act.on {
       opacity: 1;
-      color: var(--lamp-2);
+      color: var(--l2);
     }
 
     .thread-act.del:hover {
-      color: var(--danger);
+      color: var(--alert);
     }
 
     .rail-foot {
-      border-top: 1px solid var(--edge);
-      padding: 12px 16px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid var(--line);
       display: grid;
-      gap: 7px;
+      gap: 9px;
     }
 
-    .meterline {
+    .stat {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       font-family: var(--mono);
-      font-size: 11px;
-      color: var(--ink-2);
+      font-size: var(--t-mono);
+      color: var(--fg-3);
     }
 
-    .meterline b {
-      color: var(--ink);
-      font-weight: 600;
+    .stat b {
+      color: var(--fg);
+      font-weight: 500;
+      font-size: var(--t-xs);
     }
 
     /* ══ stage ══════════════════════════════════════════════════════════ */
     .stage {
-      display: flex;
-      flex-direction: column;
       min-width: 0;
-      background: var(--void);
+      position: relative;
     }
 
     .bar {
-      height: 58px;
       flex: none;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--edge);
-      background: var(--panel);
+      padding: 14px;
     }
 
     .bar-side {
@@ -347,80 +377,57 @@
       gap: 6px;
     }
 
-    .icon {
-      width: 32px;
-      height: 32px;
+    .icon-btn {
+      width: 40px;
+      height: 40px;
       display: grid;
       place-items: center;
-      border-radius: 6px;
-      border: 1px solid transparent;
-      background: none;
-      color: var(--ink-2);
-      cursor: pointer;
+      border-radius: var(--r-pill);
+      color: var(--fg-2);
       transition: var(--snap);
     }
 
-    .icon:hover {
-      background: var(--panel-3);
-      color: var(--ink);
+    .icon-btn:hover {
+      background: var(--surface-2);
+      color: var(--fg);
     }
 
-    .icon[aria-pressed="true"] {
-      color: var(--ink);
-      border-color: var(--edge);
-      background: var(--panel-3);
+    .icon-btn[aria-pressed="true"] {
+      background: var(--surface-2);
+      color: var(--fg);
     }
 
-    /* ── the selector: a recessed 4-position switch ── */
+    /* ── lane selector: four chunky positions, active one filled ── */
     .selector {
       display: flex;
       align-items: center;
-      gap: 2px;
-      padding: 3px;
-      background: var(--void);
-      border: 1px solid var(--edge);
-      border-radius: 8px;
-      position: relative;
+      gap: 3px;
+      padding: 4px;
+      background: var(--surface-2);
+      border-radius: var(--r-pill);
     }
 
     .pos {
-      position: relative;
-      padding: 5px 11px;
-      border: none;
-      border-radius: 5px;
-      background: none;
-      color: var(--ink-3);
+      padding: 8px 15px;
+      border-radius: var(--r-pill);
+      color: var(--fg-3);
       font-family: var(--mono);
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: .1em;
-      cursor: pointer;
+      font-size: var(--t-mono);
+      font-weight: 500;
+      letter-spacing: .04em;
       transition: var(--snap);
-      white-space: nowrap;
     }
 
     .pos:hover {
-      color: var(--ink-2);
+      color: var(--fg);
     }
 
+    /* AUTO fills with --fg and needs --bg text; a lane fills with its hue and
+       needs the fixed near-black. setMode supplies --lane-fg for each case. */
     .pos[aria-pressed="true"] {
-      background: var(--panel-3);
-      color: var(--ink);
-      box-shadow: inset 0 0 0 1px var(--edge);
-    }
-
-    /* The lamp above the engaged position is the only colour in the bar. */
-    .pos[aria-pressed="true"]::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      bottom: -6px;
-      width: 14px;
-      height: 2px;
-      transform: translateX(-50%);
-      border-radius: 2px;
-      background: var(--lane-hue, var(--ink-2));
-      box-shadow: 0 0 8px color-mix(in srgb, var(--lane-hue, var(--ink-2)) calc(var(--glow) * 100%), transparent);
+      background: var(--lane, var(--fg));
+      color: var(--lane-fg, var(--bg));
+      font-weight: 600;
     }
 
     .scroll {
@@ -431,155 +438,156 @@
       scroll-behavior: smooth;
     }
 
-    .thread-wrap {
-      max-width: 780px;
+    .wrap {
+      max-width: 760px;
       margin: 0 auto;
-      padding: 30px 24px 26px;
+      padding: 8px 28px 24px;
     }
 
     /* ══ hero ═══════════════════════════════════════════════════════════ */
     .hero {
-      max-width: 780px;
+      max-width: 760px;
       margin: 0 auto;
-      padding: 52px 24px 20px;
+      padding: clamp(16px, 4vh, 48px) 28px 24px;
     }
 
     .hero h1 {
       font-family: var(--display);
-      font-variation-settings: "wdth" 82;
+      font-variation-settings: "wdth" 84, "opsz" 96;
       font-weight: 800;
-      font-size: clamp(34px, 5.4vw, 54px);
-      line-height: .98;
-      letter-spacing: -.015em;
-      text-transform: uppercase;
-      margin-bottom: 14px;
+      font-size: var(--t-hero);
+      line-height: .92;
+      letter-spacing: -.045em;
+      margin-bottom: 18px;
     }
 
-    .hero h1 em {
-      font-style: normal;
-      font-variation-settings: "wdth" 118;
-      font-weight: 500;
-      text-transform: none;
-      letter-spacing: -.02em;
-      color: var(--ink-2);
+    .hero h1 span {
+      display: block;
+      font-variation-settings: "wdth" 100, "opsz" 96;
+      font-weight: 300;
+      color: var(--fg-2);
     }
 
     .hero p {
-      color: var(--ink-2);
-      max-width: 48ch;
-      margin-bottom: 30px;
+      color: var(--fg-2);
+      max-width: 46ch;
+      margin-bottom: 28px;
     }
 
-    /* ── the board: three lanes, drawn as the patchbay they are ── */
+    /* ── the board: three lanes as filled colour blocks ── */
     .board {
-      border: 1px solid var(--edge);
-      border-radius: 10px;
-      overflow: hidden;
-      background: var(--panel);
-      margin-bottom: 26px;
-    }
-
-    .board-head {
-      display: flex;
-      justify-content: space-between;
-      padding: 9px 14px;
-      border-bottom: 1px solid var(--edge);
-      background: var(--panel-2);
-    }
-
-    .lane-row {
       display: grid;
-      grid-template-columns: 5px 76px minmax(0, 1fr) auto;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .lane-card {
+      background: var(--lane);
+      color: var(--on-lane);
+      border-radius: var(--r-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 168px;
+      transition: var(--snap);
+    }
+
+    .lane-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .lane-head {
+      display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 13px 14px 13px 0;
-      border-bottom: 1px solid var(--edge);
-    }
-
-    .lane-row:last-child {
-      border-bottom: none;
-    }
-
-    .lane-bar {
-      height: 100%;
-      min-height: 34px;
-      background: var(--lane-hue);
-      opacity: .9;
-    }
-
-    .lane-id {
+      justify-content: space-between;
       font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      color: var(--lane-hue);
-      padding-left: 9px;
+      font-size: var(--t-mono);
+      font-weight: 600;
+      letter-spacing: .06em;
+      margin-bottom: 10px;
+      opacity: .72;
     }
 
     .lane-model {
-      font-family: var(--mono);
-      font-size: 12.5px;
-      color: var(--ink);
-      display: block;
+      font-family: var(--display);
+      font-variation-settings: "wdth" 88, "opsz" 32;
+      font-weight: 700;
+      font-size: var(--t-lg);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+      word-break: break-word;
     }
 
+    /* Near-black on a saturated fill loses too much at low opacity — keep the
+       supporting copy nearly solid and let size carry the hierarchy. */
     .lane-use {
-      font-size: 12.5px;
-      color: var(--ink-2);
+      font-size: var(--t-xs);
+      line-height: 1.4;
+      opacity: .88;
+      margin-top: 2px;
     }
 
-    .lane-cost {
+    .lane-price {
+      margin-top: auto;
+      padding-top: 12px;
       font-family: var(--mono);
-      font-size: 10.5px;
-      color: var(--ink-3);
-      text-align: right;
-      padding-right: 4px;
-      white-space: nowrap;
+      font-size: var(--t-mono);
+      opacity: .78;
     }
 
     .starters {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 8px;
     }
 
     .starter {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 11px 13px;
-      background: var(--panel);
-      border: 1px solid var(--edge);
-      border-radius: 8px;
-      color: var(--ink);
-      font: inherit;
-      font-size: 13.5px;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border-radius: var(--r-md);
+      font-size: var(--t-sm);
       text-align: left;
-      cursor: pointer;
       transition: var(--snap);
     }
 
     .starter:hover {
-      background: var(--panel-2);
-      border-color: var(--lane-hue);
-      transform: translateY(-1px);
+      background: var(--surface-3);
+      transform: translateX(3px);
     }
 
-    .starter .stamp {
-      color: var(--lane-hue);
+    .starter-tag {
       flex: none;
+      padding: 3px 9px;
+      border-radius: var(--r-pill);
+      background: var(--lane);
+      color: var(--on-lane);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .starter span:last-child {
+      flex: 1;
+    }
+
+    .starter .ic {
+      color: var(--fg-3);
     }
 
     /* ══ turns ══════════════════════════════════════════════════════════ */
     .turn {
-      margin-bottom: 28px;
-      animation: rise .22s ease-out both;
+      margin-bottom: 26px;
+      animation: rise .26s var(--ease) both;
     }
 
     @keyframes rise {
       from {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(8px);
       }
     }
 
@@ -589,71 +597,76 @@
     }
 
     .said {
-      max-width: 82%;
-      background: var(--panel-2);
-      border: 1px solid var(--edge);
-      border-radius: 10px 10px 3px 10px;
-      padding: 11px 15px;
+      max-width: 80%;
+      background: var(--surface-2);
+      border-radius: var(--r-lg) var(--r-lg) 6px var(--r-lg);
+      padding: 13px 18px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
 
-    /* ── the route slug: every answer is stamped with how it got here ── */
-    .slug {
+    /* ── route stamp: how this answer got here ── */
+    .stamp {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      padding: 6px 0 10px;
-      border-bottom: 1px solid var(--edge);
-      margin-bottom: 14px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--ink-3);
+      margin-bottom: 16px;
     }
 
-    .slug-lane {
+    .stamp-lane {
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      font-weight: 700;
-      letter-spacing: .1em;
-      color: var(--lane-hue);
+      padding: 5px 12px;
+      border-radius: var(--r-pill);
+      background: var(--lane, var(--surface-3));
+      color: var(--on-lane);
+      font-family: var(--mono);
+      font-size: var(--t-mono);
+      font-weight: 600;
+      letter-spacing: .03em;
     }
 
-    .slug-lane::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--lane-hue);
-      box-shadow: 0 0 9px color-mix(in srgb, var(--lane-hue) calc(var(--glow) * 100%), transparent);
+    .stamp.pending .stamp-lane {
+      background: var(--surface-3);
+      color: var(--fg-3);
     }
 
-    /* Five segments: the complexity reading that chose this lane. */
+    /* Five bars: the complexity reading that chose the lane. */
     .segs {
       display: flex;
       gap: 3px;
     }
 
     .seg {
-      width: 13px;
-      height: 6px;
-      border-radius: 1px;
-      background: var(--track);
-      transition: background .18s ease;
+      width: 4px;
+      height: 14px;
+      border-radius: 2px;
+      background: var(--surface-3);
+      transition: background .2s var(--ease);
     }
 
     .seg.lit {
-      background: var(--lane-hue);
+      background: var(--lane);
     }
 
-    .slug-why {
-      color: var(--ink-2);
+    .stamp-model,
+    .stamp-why {
+      font-family: var(--mono);
+      font-size: var(--t-mono);
+      color: var(--fg-3);
     }
 
-    .slug-stat {
+    .stamp-why {
+      color: var(--fg-2);
+    }
+
+    .stamp-stats {
       margin-left: auto;
+      font-family: var(--mono);
+      font-size: var(--t-mono);
+      color: var(--fg-3);
       white-space: nowrap;
     }
 
@@ -662,29 +675,30 @@
     }
 
     .prose>*+* {
-      margin-top: 13px;
+      margin-top: 14px;
     }
 
     .prose h1,
     .prose h2,
     .prose h3 {
       font-family: var(--display);
-      font-variation-settings: "wdth" 92;
+      font-variation-settings: "wdth" 92, "opsz" 32;
       font-weight: 700;
+      letter-spacing: -.025em;
       line-height: 1.2;
-      margin-top: 22px;
+      margin-top: 26px;
     }
 
     .prose h1 {
-      font-size: 22px;
+      font-size: var(--t-xl);
     }
 
     .prose h2 {
-      font-size: 19px;
+      font-size: var(--t-lg);
     }
 
     .prose h3 {
-      font-size: 16.5px;
+      font-size: 1.0625rem;
     }
 
     .prose ul,
@@ -693,27 +707,30 @@
     }
 
     .prose li+li {
-      margin-top: 5px;
+      margin-top: 6px;
+    }
+
+    .prose li::marker {
+      color: var(--lane, var(--fg-3));
     }
 
     .prose a {
-      color: var(--lane-hue, var(--lamp-2));
-      text-underline-offset: 2px;
+      color: var(--fg);
+      text-decoration-color: var(--lane, var(--fg-3));
+      text-underline-offset: 3px;
     }
 
     .prose code {
       font-family: var(--mono);
-      font-size: .87em;
-      background: var(--panel-2);
-      border: 1px solid var(--edge);
-      border-radius: 4px;
-      padding: 1px 5px;
+      font-size: .86em;
+      background: var(--surface-2);
+      border-radius: 6px;
+      padding: 2px 6px;
     }
 
     .prose pre {
-      background: var(--panel);
-      border: 1px solid var(--edge);
-      border-radius: 8px;
+      background: var(--surface-2);
+      border-radius: var(--r-lg);
       overflow: hidden;
       position: relative;
     }
@@ -721,26 +738,22 @@
     .prose pre code {
       display: block;
       background: none;
-      border: none;
-      padding: 14px 15px;
+      padding: 16px 18px;
       overflow-x: auto;
-      font-size: 12.5px;
-      line-height: 1.65;
+      font-size: var(--t-mono);
+      line-height: 1.7;
     }
 
     .copy-code {
       position: absolute;
-      top: 7px;
-      right: 7px;
-      padding: 3px 8px;
-      background: var(--panel-3);
-      border: 1px solid var(--edge);
-      border-radius: 5px;
-      color: var(--ink-2);
+      top: 10px;
+      right: 10px;
+      padding: 5px 11px;
+      background: var(--surface-3);
+      border-radius: var(--r-pill);
+      color: var(--fg-2);
       font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: .08em;
-      cursor: pointer;
+      font-size: 11px;
       opacity: 0;
       transition: var(--snap);
     }
@@ -750,11 +763,11 @@
       opacity: 1;
     }
 
-    /* Syntax tokens reuse the three cable hues, so code reads as part of the
-       same instrument in both themes rather than a pasted-in vendor palette. */
+    /* Syntax tokens reuse the three lane hues, so code belongs to the same
+       system in both themes instead of importing a vendor palette. */
     .hljs-comment,
     .hljs-quote {
-      color: var(--ink-3);
+      color: var(--fg-3);
       font-style: italic;
     }
 
@@ -762,13 +775,13 @@
     .hljs-selector-tag,
     .hljs-literal,
     .hljs-type {
-      color: var(--lamp-3);
+      color: var(--l3);
     }
 
     .hljs-string,
     .hljs-regexp,
     .hljs-addition {
-      color: var(--lamp-1);
+      color: var(--l1);
     }
 
     .hljs-number,
@@ -778,24 +791,24 @@
     .hljs-variable,
     .hljs-template-variable,
     .hljs-built_in {
-      color: var(--lamp-2);
+      color: var(--l2);
     }
 
     .hljs-title,
     .hljs-name,
     .hljs-section {
-      color: var(--ink);
+      color: var(--fg);
       font-weight: 600;
     }
 
     .hljs-meta,
     .hljs-tag,
     .hljs-punctuation {
-      color: var(--ink-2);
+      color: var(--fg-2);
     }
 
     .hljs-deletion {
-      color: var(--danger);
+      color: var(--alert);
     }
 
     .hljs-emphasis {
@@ -807,9 +820,9 @@
     }
 
     .prose blockquote {
-      border-left: 2px solid var(--lane-hue, var(--edge));
-      padding-left: 14px;
-      color: var(--ink-2);
+      border-left: 3px solid var(--lane, var(--line));
+      padding-left: 16px;
+      color: var(--fg-2);
     }
 
     .prose table {
@@ -817,37 +830,39 @@
       width: 100%;
       display: block;
       overflow-x: auto;
-      font-size: 13.5px;
+      font-size: var(--t-xs);
     }
 
     .prose th,
     .prose td {
-      border: 1px solid var(--edge);
-      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
       text-align: left;
     }
 
     .prose th {
-      background: var(--panel-2);
       font-family: var(--mono);
       font-size: 11px;
-      letter-spacing: .06em;
+      font-weight: 500;
+      letter-spacing: .05em;
       text-transform: uppercase;
+      color: var(--fg-3);
     }
 
     .prose img {
       max-width: 100%;
-      border-radius: 6px;
+      border-radius: var(--r-md);
     }
 
     .caret {
       display: inline-block;
-      width: 7px;
-      height: 15px;
-      margin-left: 2px;
-      background: var(--lane-hue, var(--ink));
+      width: 3px;
+      height: 1.05em;
+      margin-left: 3px;
+      border-radius: 2px;
+      background: var(--lane, var(--fg));
       vertical-align: -2px;
-      animation: pulse .9s steps(2, start) infinite;
+      animation: pulse 1s steps(2, start) infinite;
     }
 
     @keyframes pulse {
@@ -858,8 +873,8 @@
 
     .acts {
       display: flex;
-      gap: 4px;
-      margin-top: 12px;
+      gap: 6px;
+      margin-top: 16px;
       opacity: 0;
       transition: var(--snap);
     }
@@ -873,59 +888,53 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 9px;
-      background: none;
-      border: 1px solid var(--edge);
-      border-radius: 6px;
-      color: var(--ink-2);
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      cursor: pointer;
+      padding: 7px 13px;
+      background: var(--surface-2);
+      border-radius: var(--r-pill);
+      color: var(--fg-2);
+      font-size: var(--t-xs);
       transition: var(--snap);
     }
 
     .act:hover {
-      color: var(--ink);
-      background: var(--panel-2);
+      background: var(--surface-3);
+      color: var(--fg);
     }
 
     .act.hot {
-      color: var(--lamp-3);
-      border-color: color-mix(in srgb, var(--lamp-3) 40%, var(--edge));
+      background: var(--l3);
+      color: var(--on-lane);
+      font-weight: 500;
     }
 
     .fault {
-      border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--edge));
-      background: color-mix(in srgb, var(--danger) 8%, transparent);
-      border-radius: 8px;
-      padding: 11px 14px;
-      color: var(--ink);
-      font-size: 13.5px;
+      border-radius: var(--r-lg);
+      background: color-mix(in srgb, var(--alert) 14%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--alert) 40%, transparent);
+      padding: 14px 18px;
+      font-size: var(--t-sm);
     }
 
-    /* ══ dock ═══════════════════════════════════════════════════════════ */
+    /* ══ composer ═══════════════════════════════════════════════════════ */
     .dock {
       flex: none;
-      padding: 0 24px 20px;
-      background: linear-gradient(to top, var(--void) 62%, transparent);
+      padding: 0 28px 18px;
     }
 
     .dock-inner {
-      max-width: 780px;
+      max-width: 760px;
       margin: 0 auto;
     }
 
     .console {
-      background: var(--panel);
-      border: 1px solid var(--edge);
-      border-radius: 12px;
-      transition: border-color var(--snap);
+      background: var(--surface-2);
+      border-radius: var(--r-xl);
+      padding: 6px;
+      transition: var(--snap);
     }
 
     .console:focus-within {
-      border-color: var(--ink-3);
+      box-shadow: 0 0 0 2px var(--lane, var(--line));
     }
 
     .console textarea {
@@ -933,13 +942,12 @@
       background: none;
       border: none;
       resize: none;
-      color: var(--ink);
+      color: var(--fg);
       font: inherit;
-      font-size: 15px;
       line-height: 1.55;
-      padding: 14px 16px 6px;
-      max-height: 210px;
-      min-height: 26px;
+      padding: 14px 16px 8px;
+      max-height: 200px;
+      min-height: 28px;
     }
 
     .console textarea:focus {
@@ -947,173 +955,221 @@
     }
 
     .console textarea::placeholder {
-      color: var(--ink-3);
+      color: var(--fg-3);
     }
 
     .console-foot {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 8px 8px 14px;
+      padding: 4px 6px 4px 16px;
     }
 
-    /* Predicted lane, updating as you type — routing shown before you commit. */
+    /* Predicted lane, updating as you type. */
     .predict {
       display: flex;
       align-items: center;
       gap: 8px;
       font-family: var(--mono);
-      font-size: 10.5px;
-      letter-spacing: .08em;
-      color: var(--ink-3);
-      text-transform: uppercase;
+      font-size: var(--t-mono);
+      color: var(--fg-3);
       min-width: 0;
     }
 
     .predict b {
-      color: var(--lane-hue, var(--ink-3));
-      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--r-pill);
+      background: var(--lane, var(--surface-3));
+      color: var(--lane, var(--fg-3));
+      font-weight: 600;
+    }
+
+    .predict.has-lane b {
+      color: var(--on-lane);
     }
 
     .count {
       margin-left: auto;
       font-family: var(--mono);
-      font-size: 10.5px;
-      color: var(--ink-3);
+      font-size: var(--t-mono);
+      color: var(--fg-3);
       white-space: nowrap;
     }
 
     .send {
-      width: 34px;
-      height: 34px;
+      width: 42px;
+      height: 42px;
       flex: none;
       display: grid;
       place-items: center;
-      border: 1px solid var(--edge);
-      border-radius: 8px;
-      background: var(--panel-3);
-      color: var(--lane-hue, var(--ink-2));
-      cursor: pointer;
+      border-radius: var(--r-pill);
+      background: var(--lane, var(--surface-3));
+      color: var(--lane, var(--fg-3));
       transition: var(--snap);
     }
 
+    .send.armed {
+      color: var(--on-lane);
+    }
+
     .send:hover:not(:disabled) {
-      background: var(--lane-hue, var(--panel-3));
-      color: var(--void);
-      border-color: var(--lane-hue);
+      transform: scale(1.06);
     }
 
     .send:disabled {
-      color: var(--ink-3);
       cursor: not-allowed;
     }
 
     .send.stop {
-      color: var(--danger);
-      border-color: color-mix(in srgb, var(--danger) 45%, var(--edge));
+      background: var(--alert);
+      color: #fff;
     }
 
     .hint {
-      margin-top: 8px;
+      margin-top: 10px;
       text-align: center;
+      display: block;
     }
 
-    /* ══ scope (router inspector) ═══════════════════════════════════════ */
+    /* ══ router panel ═══════════════════════════════════════════════════ */
     .scope {
-      background: var(--panel);
-      border-left: 1px solid var(--edge);
       overflow-y: auto;
-      min-height: 0;
       z-index: 40;
+      padding: 14px;
+      gap: 10px;
     }
 
     .shell[data-scope="off"] .scope {
       display: none;
     }
 
-    .scope-sec {
+    .scope-block {
+      background: var(--surface-2);
+      border-radius: var(--r-lg);
       padding: 16px;
-      border-bottom: 1px solid var(--edge);
+      flex: none;
     }
 
-    .scope-sec>.stamp {
-      display: block;
+    /* The verdict is the loudest thing in the panel, on purpose. */
+    .verdict {
+      background: var(--lane, var(--surface-2));
+      color: var(--on-lane);
+    }
+
+    .verdict.idle {
+      background: var(--surface-2);
+      color: var(--fg);
+    }
+
+    /* Nothing has been routed yet — an empty meter and a lone dash read as
+       broken, so the readout only appears once there is one. */
+    .verdict.idle .verdict-score,
+    .verdict.idle .ladder {
+      display: none;
+    }
+
+    .verdict-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: var(--t-mono);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      opacity: .7;
       margin-bottom: 12px;
     }
 
-    .verdict {
-      display: flex;
-      align-items: baseline;
-      gap: 9px;
-      margin-bottom: 4px;
-    }
-
-    .verdict-lane {
+    .verdict-name {
       font-family: var(--display);
-      font-variation-settings: "wdth" 86;
+      font-variation-settings: "wdth" 84, "opsz" 48;
       font-weight: 800;
-      font-size: 27px;
-      line-height: 1;
-      letter-spacing: .02em;
-      text-transform: uppercase;
-      color: var(--lane-hue, var(--ink-3));
+      font-size: clamp(1.75rem, 1.4rem + 1vw, 2.25rem);
+      line-height: .95;
+      letter-spacing: -.04em;
     }
 
     .verdict-model {
       font-family: var(--mono);
-      font-size: 11px;
-      color: var(--ink-2);
+      font-size: var(--t-mono);
+      opacity: .72;
+      margin-bottom: 12px;
     }
 
     .verdict-why {
-      font-size: 13px;
-      color: var(--ink-2);
-      margin-bottom: 13px;
+      font-size: var(--t-xs);
+      line-height: 1.45;
+      opacity: .86;
     }
 
-    /* 24-segment complexity readout — the instrument the whole app is named for. */
+    .verdict-score {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid color-mix(in srgb, var(--on-lane) 18%, transparent);
+    }
+
+    .verdict.idle .verdict-score {
+      border-top-color: var(--line);
+    }
+
+    .verdict-num {
+      font-family: var(--display);
+      font-variation-settings: "wdth" 84, "opsz" 48;
+      font-weight: 800;
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+
     .ladder {
       display: flex;
-      gap: 2px;
-      margin-bottom: 7px;
+      gap: 3px;
+      margin-top: 12px;
     }
 
     .rung {
       flex: 1;
-      height: 20px;
-      border-radius: 1px;
-      background: var(--track);
-      transition: background .2s ease, opacity .2s ease;
+      height: 8px;
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--on-lane) 18%, transparent);
+      transition: background .25s var(--ease);
+    }
+
+    .verdict.idle .rung {
+      background: var(--surface-3);
     }
 
     .rung.lit {
-      background: var(--lane-hue);
+      background: var(--on-lane);
     }
 
-    .ladder-scale {
-      display: flex;
-      justify-content: space-between;
-      font-family: var(--mono);
-      font-size: 9.5px;
-      color: var(--ink-3);
+    .block-label {
+      display: block;
+      margin-bottom: 14px;
     }
 
     .signal {
       display: grid;
-      grid-template-columns: 62px 1fr 26px;
-      align-items: center;
-      gap: 9px;
-      margin-bottom: 8px;
+      grid-template-columns: 1fr auto;
+      gap: 4px 10px;
+      margin-bottom: 12px;
+      font-size: var(--t-xs);
+      color: var(--fg-2);
+    }
+
+    .signal-val {
       font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--ink-3);
+      font-size: var(--t-mono);
+      color: var(--fg);
     }
 
     .signal-track {
-      height: 5px;
-      background: var(--track);
+      grid-column: 1 / -1;
+      height: 6px;
+      background: var(--surface-3);
       border-radius: 3px;
       overflow: hidden;
     }
@@ -1121,70 +1177,58 @@
     .signal-fill {
       display: block;
       height: 100%;
-      background: var(--ink-3);
       border-radius: 3px;
-      transition: width .3s ease;
-    }
-
-    .signal-val {
-      text-align: right;
-      color: var(--ink-2);
+      background: var(--fg-3);
+      transition: width .35s var(--ease);
     }
 
     .roster-row {
-      display: grid;
-      grid-template-columns: 3px 1fr auto;
-      gap: 10px;
+      display: flex;
       align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--edge);
+      gap: 11px;
+      padding: 9px 0;
     }
 
-    .roster-row:last-child {
-      border-bottom: none;
+    .roster-row+.roster-row {
+      border-top: 1px solid var(--line);
     }
 
-    .roster-row[data-live="true"] .roster-name {
-      color: var(--ink);
+    .roster-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--lane);
+      flex: none;
+      opacity: .35;
     }
 
-    .roster-pip {
-      width: 3px;
-      height: 26px;
-      border-radius: 2px;
-      background: var(--lane-hue);
-      opacity: .3;
-    }
-
-    .roster-row[data-live="true"] .roster-pip {
+    .roster-row[data-live="true"] .roster-dot {
       opacity: 1;
-      box-shadow: 0 0 8px color-mix(in srgb, var(--lane-hue) calc(var(--glow) * 100%), transparent);
     }
 
     .roster-name {
       font-family: var(--mono);
-      font-size: 11.5px;
-      color: var(--ink-2);
+      font-size: var(--t-mono);
+      color: var(--fg-2);
+      flex: 1;
     }
 
-    .roster-meta {
-      font-family: var(--mono);
-      font-size: 9.5px;
-      color: var(--ink-3);
+    .roster-row[data-live="true"] .roster-name {
+      color: var(--fg);
     }
 
     .roster-hits {
       font-family: var(--mono);
-      font-size: 10px;
-      color: var(--ink-3);
-      text-align: right;
+      font-size: var(--t-mono);
+      color: var(--fg-3);
     }
 
     /* ══ overlays ═══════════════════════════════════════════════════════ */
     .scrim {
       position: fixed;
       inset: 0;
-      background: rgba(3, 7, 10, .62);
+      background: rgba(6, 6, 8, .6);
+      backdrop-filter: blur(2px);
       z-index: 60;
       opacity: 0;
       pointer-events: none;
@@ -1199,34 +1243,41 @@
     .modal {
       position: fixed;
       z-index: 70;
-      background: var(--panel);
-      border: 1px solid var(--edge);
-      border-radius: 12px;
+      background: var(--surface);
+      border-radius: var(--r-xl);
       box-shadow: var(--lift);
       display: none;
     }
 
     .modal.on {
       display: block;
+      animation: pop .2s var(--ease) both;
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translate(-50%, calc(var(--pop-y, 0px) + 10px)) scale(.98);
+      }
     }
 
     .palette {
-      top: 14vh;
+      top: 12vh;
       left: 50%;
       transform: translateX(-50%);
-      width: min(540px, 92vw);
+      width: min(560px, 92vw);
       overflow: hidden;
     }
 
     .palette input {
       width: 100%;
-      padding: 15px 17px;
+      padding: 18px 22px;
       background: none;
       border: none;
-      border-bottom: 1px solid var(--edge);
-      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+      color: var(--fg);
       font: inherit;
-      font-size: 15px;
+      font-size: var(--t-lg);
     }
 
     .palette input:focus {
@@ -1234,49 +1285,50 @@
     }
 
     .cmd-list {
-      max-height: 320px;
+      max-height: 340px;
       overflow-y: auto;
-      padding: 6px;
+      padding: 8px;
     }
 
     .cmd {
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 11px;
-      padding: 9px 11px;
-      border: none;
-      border-radius: 7px;
-      background: none;
-      color: var(--ink-2);
-      font: inherit;
-      font-size: 13.5px;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: var(--r-md);
+      color: var(--fg-2);
+      font-size: var(--t-sm);
       text-align: left;
-      cursor: pointer;
     }
 
     .cmd[data-on="true"],
     .cmd:hover {
-      background: var(--panel-3);
-      color: var(--ink);
+      background: var(--surface-2);
+      color: var(--fg);
+    }
+
+    .cmd .ic {
+      color: var(--fg-3);
     }
 
     .cmd kbd {
       margin-left: auto;
       font-family: var(--mono);
-      font-size: 10px;
-      color: var(--ink-3);
-      border: 1px solid var(--edge);
-      border-radius: 4px;
-      padding: 1px 5px;
+      font-size: 11px;
+      color: var(--fg-3);
+      background: var(--surface-2);
+      border-radius: 6px;
+      padding: 3px 7px;
     }
 
     .sheet {
+      --pop-y: -50%;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: min(560px, 92vw);
-      max-height: 84vh;
+      width: min(580px, 92vw);
+      max-height: 86vh;
       overflow-y: auto;
     }
 
@@ -1284,75 +1336,76 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 15px 18px;
-      border-bottom: 1px solid var(--edge);
+      padding: 20px 22px 16px;
       position: sticky;
       top: 0;
-      background: var(--panel);
+      background: var(--surface);
+      z-index: 1;
     }
 
     .sheet-head h2 {
       font-family: var(--display);
-      font-variation-settings: "wdth" 88;
-      font-weight: 800;
-      font-size: 15px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
+      font-variation-settings: "wdth" 88, "opsz" 32;
+      font-weight: 700;
+      font-size: var(--t-xl);
+      letter-spacing: -.03em;
     }
 
     .field {
-      padding: 15px 18px;
-      border-bottom: 1px solid var(--edge);
+      padding: 16px 22px;
     }
 
-    .field label {
+    .field+.field {
+      border-top: 1px solid var(--line);
+    }
+
+    .field>label {
       display: block;
-      margin-bottom: 7px;
+      margin-bottom: 10px;
     }
 
     .field-note {
-      font-size: 12.5px;
-      color: var(--ink-3);
-      margin-top: 7px;
-    }
-
-    .field textarea,
-    .field select {
-      width: 100%;
-      padding: 10px 12px;
-      background: var(--void);
-      border: 1px solid var(--edge);
-      border-radius: 7px;
-      color: var(--ink);
-      font: inherit;
-      font-size: 13.5px;
+      font-size: var(--t-xs);
+      color: var(--fg-3);
+      line-height: 1.45;
+      margin-top: 8px;
     }
 
     .field textarea {
-      resize: vertical;
-      min-height: 92px;
+      width: 100%;
+      padding: 13px 15px;
+      background: var(--surface-2);
+      border: none;
+      border-radius: var(--r-md);
+      color: var(--fg);
       font-family: var(--mono);
-      font-size: 12.5px;
+      font-size: var(--t-xs);
       line-height: 1.6;
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    .field textarea:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--line);
     }
 
     .slide {
       display: flex;
       align-items: center;
-      gap: 13px;
+      gap: 14px;
     }
 
-    /* Controls stay steel. The three cable hues mean routing and nothing else. */
     .slide input[type="range"] {
       flex: 1;
-      accent-color: var(--ink-2);
+      accent-color: var(--fg);
+      height: 20px;
     }
 
     .slide output {
       font-family: var(--mono);
-      font-size: 12px;
-      color: var(--ink);
-      min-width: 46px;
+      font-size: var(--t-xs);
+      min-width: 50px;
       text-align: right;
     }
 
@@ -1360,18 +1413,16 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 16px;
+      gap: 18px;
     }
 
     .switch {
       flex: none;
-      width: 42px;
-      height: 23px;
+      width: 48px;
+      height: 28px;
       margin-top: 2px;
-      border-radius: 20px;
-      border: 1px solid var(--edge);
-      background: var(--void);
-      cursor: pointer;
+      border-radius: var(--r-pill);
+      background: var(--surface-3);
       position: relative;
       transition: var(--snap);
     }
@@ -1379,64 +1430,61 @@
     .switch::after {
       content: "";
       position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 15px;
-      height: 15px;
+      top: 4px;
+      left: 4px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: var(--ink-3);
+      background: var(--fg-3);
       transition: var(--snap);
     }
 
     .switch[aria-pressed="true"] {
-      background: color-mix(in srgb, var(--ink) 18%, var(--void));
-      border-color: var(--ink-2);
+      background: var(--fg);
     }
 
     .switch[aria-pressed="true"]::after {
-      left: 21px;
-      background: var(--ink);
+      left: 24px;
+      background: var(--bg);
     }
 
-    .persona-set {
+    .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 9px;
+      gap: 7px;
+      margin-top: 12px;
     }
 
-    .persona {
-      padding: 5px 10px;
-      background: var(--void);
-      border: 1px solid var(--edge);
-      border-radius: 20px;
-      color: var(--ink-2);
-      font-family: var(--mono);
-      font-size: 10.5px;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      cursor: pointer;
+    .chip {
+      padding: 8px 14px;
+      background: var(--surface-2);
+      border-radius: var(--r-pill);
+      color: var(--fg-2);
+      font-size: var(--t-xs);
       transition: var(--snap);
     }
 
-    .persona:hover {
-      color: var(--ink);
-      border-color: var(--ink-3);
+    .chip:hover {
+      background: var(--surface-3);
+      color: var(--fg);
+    }
+
+    .chip.danger:hover {
+      background: var(--alert);
+      color: #fff;
     }
 
     .toast {
       position: fixed;
-      bottom: 26px;
+      bottom: 28px;
       left: 50%;
-      transform: translate(-50%, 14px);
-      padding: 9px 16px;
-      background: var(--panel-3);
-      border: 1px solid var(--edge);
-      border-radius: 8px;
-      box-shadow: var(--lift);
-      font-family: var(--mono);
-      font-size: 11.5px;
-      color: var(--ink);
+      transform: translate(-50%, 16px);
+      padding: 12px 20px;
+      background: var(--fg);
+      color: var(--bg);
+      border-radius: var(--r-pill);
+      font-size: var(--t-xs);
+      font-weight: 500;
       opacity: 0;
       pointer-events: none;
       transition: opacity var(--snap), transform var(--snap);
@@ -1448,50 +1496,58 @@
       transform: translate(-50%, 0);
     }
 
+    .empty-note {
+      padding: 20px 8px;
+      display: block;
+    }
+
     .only-narrow {
       display: none;
     }
 
     /* ══ responsive ═════════════════════════════════════════════════════ */
-    @media (max-width: 1180px) {
-      .shell {
-        grid-template-columns: var(--rail-w) minmax(0, 1fr) 0;
+    @media (max-width: 1200px) {
+      .shell,
+      .shell[data-scope="off"] {
+        grid-template-columns: var(--rail-w) minmax(0, 1fr);
       }
 
       .scope {
         position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: min(320px, 88vw);
-        transform: translateX(100%);
-        transition: transform .24s cubic-bezier(.2, .7, .3, 1);
+        top: 10px;
+        right: 10px;
+        bottom: 10px;
+        width: min(330px, 88vw);
+        transform: translateX(calc(100% + 16px));
+        transition: transform .28s var(--ease);
+        display: flex;
       }
 
       .shell[data-scope="on"] .scope {
-        display: block;
         transform: translateX(0);
-      }
-
-      .shell[data-scope="off"] .scope {
-        display: block;
       }
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 880px) {
       .shell,
       .shell[data-scope="off"] {
         grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        padding: 0;
+      }
+
+      .stage {
+        border-radius: 0;
       }
 
       .rail {
         position: fixed;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: min(288px, 86vw);
-        transform: translateX(-100%);
-        transition: transform .24s cubic-bezier(.2, .7, .3, 1);
+        top: 10px;
+        bottom: 10px;
+        left: 10px;
+        width: min(292px, 86vw);
+        transform: translateX(calc(-100% - 16px));
+        transition: transform .28s var(--ease);
       }
 
       .shell[data-rail="on"] .rail {
@@ -1502,26 +1558,15 @@
         display: grid;
       }
 
-      /* The bar carries six controls at desktop width; drop the ones that
-         have a better mobile route (the palette is a keyboard affordance). */
-      .bar {
-        padding: 0 8px;
-        gap: 4px;
+      .board {
+        grid-template-columns: 1fr;
       }
 
-      #btnPalette {
-        display: none;
+      .lane-card {
+        min-height: 0;
       }
 
-      .pos {
-        padding: 5px 8px;
-      }
-
-      .hint {
-        display: none;
-      }
-
-      .thread-wrap,
+      .wrap,
       .hero {
         padding-left: 16px;
         padding-right: 16px;
@@ -1531,31 +1576,41 @@
         padding: 0 12px 12px;
       }
 
+      /* Six controls do not fit a 390px bar. Drop the palette (a keyboard
+         affordance) and tighten the rest so nothing clips off the edge. */
+      .bar {
+        padding: 10px 8px 8px;
+        gap: 4px;
+      }
+
+      #btnPalette {
+        display: none;
+      }
+
+      .icon-btn {
+        width: 36px;
+        height: 36px;
+      }
+
+      .pos {
+        padding: 7px 10px;
+      }
+
+      .selector {
+        padding: 3px;
+      }
+
       .said {
-        max-width: 92%;
+        max-width: 90%;
       }
 
-      /* Three columns of lane detail do not fit a phone; stack them beside
-         one continuous cable bar. */
-      .lane-row {
-        grid-template-columns: 5px minmax(0, 1fr);
-        grid-template-rows: auto auto auto;
-        row-gap: 3px;
-        padding-right: 14px;
-      }
-
-      .lane-bar {
-        grid-row: 1 / 4;
-      }
-
-      .lane-cost {
-        text-align: left;
-        padding-right: 0;
-      }
-
-      .slug-stat {
+      .stamp-stats {
         margin-left: 0;
         width: 100%;
+      }
+
+      .hint {
+        display: none;
       }
     }
 
@@ -1573,58 +1628,74 @@
 </head>
 
 <body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<symbol id="i-add" viewBox="0 0 24 24" fill="none"><path d="M12.001 5.00003V19.002" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M19.002 12.002L4.99998 12.002" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none"><path d="M17 17L21 21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C15.4183 19 19 15.4183 19 11Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24" fill="none"><path d="M9.49811 15L16.9981 7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M8.00634 7.67888L15.327 4.21881C18.3688 2.78111 19.8897 2.06226 20.8598 2.78341C21.8299 3.50455 21.5527 5.14799 20.9984 8.43486L20.0435 14.0968C19.6811 16.246 19.4998 17.3205 18.6989 17.7891C17.8979 18.2577 16.8574 17.8978 14.7765 17.178L8.41077 14.9762C4.51917 13.6301 2.57337 12.9571 2.50019 11.6365C2.427 10.3159 4.28678 9.43692 8.00634 7.67888Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M9.49811 15.5V17.7274C9.49811 20.101 9.49811 21.2878 10.2083 21.4771C10.9185 21.6663 11.6664 20.6789 13.1622 18.7039L13.9981 17.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24" fill="none"><path d="M4 12C4 8.72077 4 7.08116 4.81382 5.91891C5.1149 5.48891 5.48891 5.1149 5.91891 4.81382C7.08116 4 8.72077 4 12 4C15.2792 4 16.9188 4 18.0811 4.81382C18.5111 5.1149 18.8851 5.48891 19.1862 5.91891C20 7.08116 20 8.72077 20 12C20 15.2792 20 16.9188 19.1862 18.0811C18.8851 18.5111 18.5111 18.8851 18.0811 19.1862C16.9188 20 15.2792 20 12 20C8.72077 20 7.08116 20 5.91891 19.1862C5.48891 18.8851 5.1149 18.5111 4.81382 18.0811C4 16.9188 4 15.2792 4 12Z" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24" fill="none"><path d="M21.3175 7.14139L20.8239 6.28479C20.4506 5.63696 20.264 5.31305 19.9464 5.18388C19.6288 5.05472 19.2696 5.15664 18.5513 5.36048L17.3311 5.70418C16.8725 5.80994 16.3913 5.74994 15.9726 5.53479L15.6357 5.34042C15.2766 5.11043 15.0004 4.77133 14.8475 4.37274L14.5136 3.37536C14.294 2.71534 14.1842 2.38533 13.9228 2.19657C13.6615 2.00781 13.3143 2.00781 12.6199 2.00781H11.5051C10.8108 2.00781 10.4636 2.00781 10.2022 2.19657C9.94085 2.38533 9.83106 2.71534 9.61149 3.37536L9.27753 4.37274C9.12465 4.77133 8.84845 5.11043 8.48937 5.34042L8.15249 5.53479C7.73374 5.74994 7.25259 5.80994 6.79398 5.70418L5.57375 5.36048C4.85541 5.15664 4.49625 5.05472 4.17867 5.18388C3.86109 5.31305 3.67445 5.63696 3.30115 6.28479L2.80757 7.14139C2.45766 7.74864 2.2827 8.05227 2.31666 8.37549C2.35061 8.69871 2.58483 8.95918 3.05326 9.48012L4.0843 10.6328C4.3363 10.9518 4.51521 11.5078 4.51521 12.0077C4.51521 12.5078 4.33636 13.0636 4.08433 13.3827L3.05326 14.5354C2.58483 15.0564 2.35062 15.3168 2.31666 15.6401C2.2827 15.9633 2.45766 16.2669 2.80757 16.8741L3.30114 17.7307C3.67443 18.3785 3.86109 18.7025 4.17867 18.8316C4.49625 18.9608 4.85542 18.8589 5.57377 18.655L6.79394 18.3113C7.25263 18.2055 7.73387 18.2656 8.15267 18.4808L8.4895 18.6752C8.84851 18.9052 9.12464 19.2442 9.2775 19.6428L9.61149 20.6403C9.83106 21.3003 9.94085 21.6303 10.2022 21.8191C10.4636 22.0078 10.8108 22.0078 11.5051 22.0078H12.6199C13.3143 22.0078 13.6615 22.0078 13.9228 21.8191C14.1842 21.6303 14.294 21.3003 14.5136 20.6403L14.8476 19.6428C15.0004 19.2442 15.2765 18.9052 15.6356 18.6752L15.9724 18.4808C16.3912 18.2656 16.8724 18.2055 17.3311 18.3113L18.5513 18.655C19.2696 18.8589 19.6288 18.9608 19.9464 18.8316C20.264 18.7025 20.4506 18.3785 20.8239 17.7307L21.3175 16.8741C21.6674 16.2669 21.8423 15.9633 21.8084 15.6401C21.7744 15.3168 21.5402 15.0564 21.0718 14.5354L20.0407 13.3827C19.7887 13.0636 19.6098 12.5078 19.6098 12.0077C19.6098 11.5078 19.7888 10.9518 20.0407 10.6328L21.0718 9.48012C21.5402 8.95918 21.7744 8.69871 21.8084 8.37549C21.8423 8.05227 21.6674 7.74864 21.3175 7.14139Z" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M15.5195 12C15.5195 13.933 13.9525 15.5 12.0195 15.5C10.0865 15.5 8.51953 13.933 8.51953 12C8.51953 10.067 10.0865 8.5 12.0195 8.5C13.9525 8.5 15.5195 10.067 15.5195 12Z" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24" fill="none"><path d="M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 2V3.5M12 20.5V22M19.0708 19.0713L18.0101 18.0106M5.98926 5.98926L4.9286 4.9286M22 12H20.5M3.5 12H2M19.0713 4.92871L18.0106 5.98937M5.98975 18.0107L4.92909 19.0714" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24" fill="none"><path d="M21.5 14.0784C20.3003 14.7189 18.9301 15.0821 17.4751 15.0821C12.7491 15.0821 8.91792 11.2509 8.91792 6.52485C8.91792 5.06986 9.28105 3.69968 9.92163 2.5C5.66765 3.49698 2.5 7.31513 2.5 11.8731C2.5 17.1899 6.8101 21.5 12.1269 21.5C16.6849 21.5 20.503 18.3324 21.5 14.0784Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24" fill="none"><path d="M4 5L20 5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M4 12L20 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M4 19L20 19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24" fill="none"><path d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24" fill="none"><path d="M3 21L8 16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M13.2585 18.8714C9.51516 18.0215 5.97844 14.4848 5.12853 10.7415C4.99399 10.1489 4.92672 9.85266 5.12161 9.37197C5.3165 8.89129 5.55457 8.74255 6.03071 8.44509C7.10705 7.77265 8.27254 7.55888 9.48209 7.66586C11.1793 7.81598 12.0279 7.89104 12.4512 7.67048C12.8746 7.44991 13.1622 6.93417 13.7376 5.90269L14.4664 4.59604C14.9465 3.73528 15.1866 3.3049 15.7513 3.10202C16.316 2.89913 16.6558 3.02199 17.3355 3.26771C18.9249 3.84236 20.1576 5.07505 20.7323 6.66449C20.978 7.34417 21.1009 7.68401 20.898 8.2487C20.6951 8.8134 20.2647 9.05346 19.4039 9.53358L18.0672 10.2792C17.0376 10.8534 16.5229 11.1406 16.3024 11.568C16.0819 11.9955 16.162 12.8256 16.3221 14.4859C16.4399 15.7068 16.2369 16.88 15.5555 17.9697C15.2577 18.4458 15.1088 18.6839 14.6283 18.8786C14.1477 19.0733 13.8513 19.006 13.2585 18.8714Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24" fill="none"><path d="M9 15C9 12.1716 9 10.7574 9.87868 9.87868C10.7574 9 12.1716 9 15 9L16 9C18.8284 9 20.2426 9 21.1213 9.87868C22 10.7574 22 12.1716 22 15V16C22 18.8284 22 20.2426 21.1213 21.1213C20.2426 22 18.8284 22 16 22H15C12.1716 22 10.7574 22 9.87868 21.1213C9 20.2426 9 18.8284 9 16L9 15Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M16.9999 9C16.9975 6.04291 16.9528 4.51121 16.092 3.46243C15.9258 3.25989 15.7401 3.07418 15.5376 2.90796C14.4312 2 12.7875 2 9.5 2C6.21252 2 4.56878 2 3.46243 2.90796C3.25989 3.07417 3.07418 3.25989 2.90796 3.46243C2 4.56878 2 6.21252 2 9.5C2 12.7875 2 14.4312 2.90796 15.5376C3.07417 15.7401 3.25989 15.9258 3.46243 16.092C4.51121 16.9528 6.04291 16.9975 9 16.9999" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-retry" viewBox="0 0 24 24" fill="none"><path d="M20.5 5.5H9.5C5.78672 5.5 3 8.18503 3 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M3.5 18.5H14.5C18.2133 18.5 21 15.815 21 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M18.5 3C18.5 3 21 4.84122 21 5.50002C21 6.15882 18.5 8 18.5 8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M5.49998 16C5.49998 16 3.00001 17.8412 3 18.5C2.99999 19.1588 5.5 21 5.5 21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-escalate" viewBox="0 0 24 24" fill="none"><path d="M9 6.65032C9 6.65032 15.9383 6.10759 16.9154 7.08463C17.8924 8.06167 17.3496 15 17.3496 15M16.5 7.5L6.5 17.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-command" viewBox="0 0 24 24" fill="none"><path d="M15 9V15H9V9H15Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M15 15H18C19.6569 15 21 16.3431 21 18C21 19.6569 19.6569 21 18 21C16.3431 21 15 19.6569 15 18V15Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M9 15.002H6C4.34315 15.002 3 16.3451 3 18.002C3 19.6588 4.34315 21.002 6 21.002C7.65685 21.002 9 19.6588 9 18.002V15.002Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M15 9L15 6C15 4.34315 16.3431 3 18 3C19.6569 3 21 4.34315 21 6C21 7.65685 19.6569 9 18 9H15Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M9 9V6C9 4.34315 7.65685 3 6 3C4.34315 3 3 4.34315 3 6C3 7.65685 4.34315 9 6 9H9Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24" fill="none"><path d="M19.5 5.5L18.8803 15.5251C18.7219 18.0864 18.6428 19.3671 18.0008 20.2879C17.6833 20.7431 17.2747 21.1273 16.8007 21.416C15.8421 22 14.559 22 11.9927 22C9.42312 22 8.1383 22 7.17905 21.4149C6.7048 21.1257 6.296 20.7408 5.97868 20.2848C5.33688 19.3626 5.25945 18.0801 5.10461 15.5152L4.5 5.5" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M3 5.5H21M16.0557 5.5L15.3731 4.09173C14.9196 3.15626 14.6928 2.68852 14.3017 2.39681C14.215 2.3321 14.1231 2.27454 14.027 2.2247C13.5939 2 13.0741 2 12.0345 2C10.9688 2 10.436 2 9.99568 2.23412C9.8981 2.28601 9.80498 2.3459 9.71729 2.41317C9.32164 2.7167 9.10063 3.20155 8.65861 4.17126L8.05292 5.5" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M9.5 16.5L9.5 10.5" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M14.5 16.5L14.5 10.5" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24" fill="none"><path d="M14.0737 3.88545C14.8189 3.07808 15.1915 2.6744 15.5874 2.43893C16.5427 1.87076 17.7191 1.85309 18.6904 2.39232C19.0929 2.6158 19.4769 3.00812 20.245 3.79276C21.0131 4.5774 21.3972 4.96972 21.6159 5.38093C22.1438 6.37312 22.1265 7.57479 21.5703 8.5507C21.3398 8.95516 20.9446 9.33578 20.1543 10.097L10.7506 19.1543C9.25288 20.5969 8.504 21.3182 7.56806 21.6837C6.63212 22.0493 5.6032 22.0224 3.54536 21.9686L3.26538 21.9613C2.63891 21.9449 2.32567 21.9367 2.14359 21.73C1.9615 21.5234 1.98636 21.2043 2.03608 20.5662L2.06308 20.2197C2.20301 18.4235 2.27297 17.5255 2.62371 16.7182C2.97444 15.9109 3.57944 15.2555 4.78943 13.9445L14.0737 3.88545Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M13 4L20 11" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M14 22L22 22" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-magic" viewBox="0 0 24 24" fill="none"><path d="M10 7L9.48415 8.39405C8.80774 10.222 8.46953 11.136 7.80278 11.8028C7.13603 12.4695 6.22204 12.8077 4.39405 13.4842L3 14L4.39405 14.5158C6.22204 15.1923 7.13603 15.5305 7.80278 16.1972C8.46953 16.864 8.80774 17.778 9.48415 19.6059L10 21L10.5158 19.6059C11.1923 17.778 11.5305 16.864 12.1972 16.1972C12.864 15.5305 13.778 15.1923 15.6059 14.5158L17 14L15.6059 13.4842C13.778 12.8077 12.864 12.4695 12.1972 11.8028C11.5305 11.136 11.1923 10.222 10.5158 8.39405L10 7Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M18 3L17.7789 3.59745C17.489 4.38087 17.3441 4.77259 17.0583 5.05833C16.7726 5.34408 16.3809 5.48903 15.5975 5.77892L15 6L15.5975 6.22108C16.3809 6.51097 16.7726 6.65592 17.0583 6.94167C17.3441 7.22741 17.489 7.61913 17.7789 8.40255L18 9L18.2211 8.40255C18.511 7.61913 18.6559 7.22741 18.9417 6.94166C19.2274 6.65592 19.6191 6.51097 20.4025 6.22108L21 6L20.4025 5.77892C19.6191 5.48903 19.2274 5.34408 18.9417 5.05833C18.6559 4.77259 18.511 4.38087 18.2211 3.59745L18 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-router" viewBox="0 0 24 24" fill="none"><path d="M7 17L7 13" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M12 17L12 7" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M17 17L17 11" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24" fill="none"><path d="M3.99963 5.00055L9.99963 5.00031" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M12.9996 5.00031L19.9996 5.00031" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M15.9996 9.00031L15.9996 15.0003" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M9.99963 2.00031L9.99963 8.00031" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M11.9996 16.0003L11.9996 22.0003" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M15.9996 12.0001L19.9996 12.0003" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M3.99963 12.0005L12.9996 12.0003" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M11.9996 19.0003L19.9996 19.0003" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M3.99963 19.0005L8.99963 19.0003" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24" fill="none"><path d="M16.9504 12.1817C17.1981 12.814 16.5076 13.5726 15.1267 15.0899C13.6702 16.6902 12.9201 17.4904 12 17.5C11.0799 17.4904 10.3298 16.6902 8.87331 15.0899C7.49239 13.5726 6.80193 12.814 7.04964 12.1817C7.05868 12.1586 7.06851 12.1359 7.0791 12.1135C7.34928 11.542 8.24477 11.5029 10 11.5002V4.99998C10 4.53501 10 4.30253 10.0511 4.11179C10.1898 3.59414 10.5941 3.1898 11.1118 3.05111C11.3025 3 11.535 3 12 3C12.4649 3 12.6974 3 12.8882 3.05111C13.4058 3.1898 13.8102 3.59414 13.9489 4.11179C14 4.30253 14 4.53501 14 4.99998V11.5002C15.7552 11.5029 16.6507 11.542 16.9209 12.1135C16.9315 12.1359 16.9413 12.1586 16.9504 12.1817Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M5.00006 21H19.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-flash" viewBox="0 0 24 24" fill="none"><path d="M5.22576 11.3294L12.224 2.34651C12.7713 1.64397 13.7972 2.08124 13.7972 3.01707V9.96994C13.7972 10.5305 14.1995 10.985 14.6958 10.985H18.0996C18.8729 10.985 19.2851 12.0149 18.7742 12.6706L11.776 21.6535C11.2287 22.356 10.2028 21.9188 10.2028 20.9829V14.0301C10.2028 13.4695 9.80048 13.015 9.3042 13.015H5.90035C5.12711 13.015 4.71494 11.9851 5.22576 11.3294Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24" fill="none"><path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></symbol>
+</svg>
+
   <div class="shell" id="shell" data-scope="on" data-rail="off">
 
     <!-- ── threads ─────────────────────────────────────────────── -->
-    <aside class="rail" id="rail">
+    <aside class="pane rail" id="rail">
       <div class="rail-top">
         <div class="mark">
           <svg class="mark-glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M2 6h7c3 0 3 12 6 12h7" stroke="var(--lamp-1)" stroke-width="2" stroke-linecap="round" />
-            <path d="M2 12h20" stroke="var(--lamp-2)" stroke-width="2" stroke-linecap="round" />
-            <path d="M2 18h7c3 0 3-12 6-12h7" stroke="var(--lamp-3)" stroke-width="2" stroke-linecap="round" />
+            <path d="M2 6h6c3.5 0 3.5 12 7 12h7" stroke="var(--l1)" stroke-width="2" stroke-linecap="round" />
+            <path d="M2 12h20" stroke="var(--l2)" stroke-width="2" stroke-linecap="round" />
+            <path d="M2 18h6c3.5 0 3.5-12 7-12h7" stroke="var(--l3)" stroke-width="2" stroke-linecap="round" />
           </svg>
           <span>Nova</span>
         </div>
-        <button class="icon only-narrow" id="railClose" aria-label="Close threads">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
+        <button class="icon-btn only-narrow" id="railClose" aria-label="Close threads">
+          <svg class="ic" width="20" height="20"><use href="#i-close" /></svg>
         </button>
       </div>
 
-      <button class="btn-new" id="btnNew">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+      <button class="btn-primary" id="btnNew">
+        <svg class="ic" width="18" height="18"><use href="#i-add" /></svg>
         New thread
       </button>
 
       <div class="seek">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.5-3.5" />
-        </svg>
+        <svg class="ic" width="17" height="17"><use href="#i-search" /></svg>
         <input id="search" type="search" placeholder="Search threads" aria-label="Search threads">
       </div>
 
       <div class="threads" id="threads"></div>
 
       <div class="rail-foot">
-        <div class="meterline"><span class="stamp">Session</span><span id="statTurns">0 turns</span></div>
-        <div class="meterline"><span class="stamp">Tokens</span><span><b id="statTokens">0</b></span></div>
-        <div class="meterline"><span class="stamp">Est. spend</span><span><b id="statCost">$0.0000</b></span></div>
+        <div class="stat"><span>Session</span><b id="statTurns">0 turns</b></div>
+        <div class="stat"><span>Tokens</span><b id="statTokens">0</b></div>
+        <div class="stat"><span>Est. spend</span><b id="statCost">$0.0000</b></div>
       </div>
     </aside>
 
     <!-- ── stage ───────────────────────────────────────────────── -->
-    <main class="stage">
+    <main class="pane stage">
       <header class="bar">
         <div class="bar-side">
-          <button class="icon only-narrow" id="railOpen" aria-label="Open threads">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+          <button class="icon-btn only-narrow" id="railOpen" aria-label="Open threads">
+            <svg class="ic" width="20" height="20"><use href="#i-menu" /></svg>
           </button>
           <div class="selector" id="selector" role="group" aria-label="Routing mode">
             <button class="pos" data-lane="auto" aria-pressed="true">AUTO</button>
@@ -1634,50 +1705,32 @@
           </div>
         </div>
         <div class="bar-side">
-          <button class="icon" id="btnPalette" aria-label="Command palette" title="Commands (Ctrl K)">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M7 9.5 9.5 12 7 14.5M12.5 15H17" />
-            </svg>
+          <button class="icon-btn" id="btnPalette" aria-label="Commands" title="Commands (Ctrl K)">
+            <svg class="ic" width="20" height="20"><use href="#i-command" /></svg>
           </button>
-          <button class="icon" id="btnSettings" aria-label="Settings">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
-                transform="translate(.5 .5) scale(.92)" />
-            </svg>
+          <button class="icon-btn" id="btnSettings" aria-label="Settings">
+            <svg class="ic" width="20" height="20"><use href="#i-settings" /></svg>
           </button>
-          <button class="icon" id="btnTheme" aria-label="Switch theme"></button>
-          <button class="icon" id="btnScope" aria-label="Toggle router panel" aria-pressed="true">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 7h6M14 7h6M4 12h12M4 17h4M12 17h8" stroke-linecap="round" />
-              <circle cx="12" cy="7" r="1.6" fill="currentColor" stroke="none" />
-              <circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none" />
-              <circle cx="10" cy="17" r="1.6" fill="currentColor" stroke="none" />
-            </svg>
+          <button class="icon-btn" id="btnTheme" aria-label="Switch theme"></button>
+          <button class="icon-btn" id="btnScope" aria-label="Toggle router panel" aria-pressed="true">
+            <svg class="ic" width="20" height="20"><use href="#i-router" /></svg>
           </button>
         </div>
       </header>
 
       <div class="scroll" id="scroll">
         <section class="hero" id="hero">
-          <h1>One prompt in.<br><em>The right model out.</em></h1>
-          <p>Nova scores every turn you send, then patches it to the cheapest model that can
-            actually answer it. Override the routing any time with the switch above.</p>
+          <h1>One prompt in.<span>The right model out.</span></h1>
+          <p>Nova reads every turn you send, scores how hard it is, and sends it to the
+            cheapest model that can actually answer it.</p>
 
-          <div class="board">
-            <div class="board-head">
-              <span class="stamp">Lane</span>
-              <span class="stamp">USD / 1M tokens</span>
-            </div>
-            <div id="board"></div>
-          </div>
+          <div class="board" id="board"></div>
 
-          <span class="stamp" style="display:block;margin-bottom:9px">Try one</span>
+          <span class="tag" style="display:block;margin-bottom:10px">Try one</span>
           <div class="starters" id="starters"></div>
         </section>
 
-        <div class="thread-wrap" id="thread" role="log" aria-live="polite" aria-label="Conversation"></div>
+        <div class="wrap" id="thread" role="log" aria-live="polite" aria-label="Conversation"></div>
       </div>
 
       <div class="dock">
@@ -1688,47 +1741,42 @@
             <div class="console-foot">
               <div class="predict" id="predict"></div>
               <span class="count" id="count"></span>
-              <button class="send" id="btnSend" disabled aria-label="Send message">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
-                  <path d="M5 12h13M12 5l6 7-6 7" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
+              <button class="send" id="btnSend" disabled aria-label="Send message"></button>
             </div>
           </div>
-          <div class="hint stamp">Enter sends · Shift Enter new line · Ctrl K commands</div>
+          <span class="tag hint">Enter sends · Shift Enter new line · Ctrl K commands</span>
         </div>
       </div>
     </main>
 
-    <!-- ── router inspector ────────────────────────────────────── -->
-    <aside class="scope" id="scope" aria-label="Router">
-      <div class="scope-sec">
-        <span class="stamp">Last decision</span>
-        <div class="verdict">
-          <span class="verdict-lane" id="vLane">Idle</span>
-          <span class="verdict-model" id="vModel">no turn routed yet</span>
-        </div>
+    <!-- ── router panel ────────────────────────────────────────── -->
+    <aside class="pane scope" id="scope" aria-label="Router">
+      <div class="scope-block verdict idle" id="verdict">
+        <div class="verdict-head"><span>Last decision</span><span id="vBy"></span></div>
+        <div class="verdict-name" id="vLane">Idle</div>
+        <div class="verdict-model" id="vModel">no turn routed yet</div>
         <p class="verdict-why" id="vWhy">Send a turn and the routing shows up here.</p>
-        <div class="ladder" id="ladder"></div>
-        <div class="ladder-scale"><span>0</span><span class="stamp" id="vScore">COMPLEXITY —</span><span>100</span>
+        <div class="verdict-score">
+          <span class="verdict-num" id="vScore">—</span>
+          <span class="tag" style="color:inherit;opacity:.7">complexity</span>
         </div>
+        <div class="ladder" id="ladder"></div>
       </div>
 
-      <div class="scope-sec">
-        <span class="stamp">Signals</span>
+      <div class="scope-block">
+        <span class="tag block-label">Signals</span>
         <div id="signals"></div>
       </div>
 
-      <div class="scope-sec">
-        <span class="stamp">Roster</span>
+      <div class="scope-block">
+        <span class="tag block-label">Roster</span>
         <div id="roster"></div>
       </div>
 
-      <div class="scope-sec">
-        <span class="stamp">Upstream</span>
-        <div class="meterline"><span>Provider</span><b id="vUpstream">—</b></div>
-        <div class="meterline"><span>Decided by</span><b id="vBy">—</b></div>
-        <div class="meterline"><span>Route time</span><b id="vLat">—</b></div>
+      <div class="scope-block">
+        <span class="tag block-label">Upstream</span>
+        <div class="stat"><span>Provider</span><b id="vUpstream">—</b></div>
+        <div class="stat" style="margin-top:8px"><span>Route time</span><b id="vLat">—</b></div>
       </div>
     </aside>
   </div>
@@ -1745,23 +1793,21 @@
   <div class="modal sheet" id="settings" role="dialog" aria-modal="true" aria-label="Settings">
     <div class="sheet-head">
       <h2>Settings</h2>
-      <button class="icon" id="settingsClose" aria-label="Close settings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+      <button class="icon-btn" id="settingsClose" aria-label="Close settings">
+        <svg class="ic" width="20" height="20"><use href="#i-close" /></svg>
       </button>
     </div>
 
     <div class="field">
-      <label class="stamp" for="sysPrompt">System prompt</label>
+      <label class="tag" for="sysPrompt">System prompt</label>
       <textarea id="sysPrompt" placeholder="Leave empty for no system prompt"></textarea>
-      <div class="persona-set" id="personas"></div>
+      <div class="chips" id="personas"></div>
     </div>
 
     <div class="field">
       <div class="toggle">
         <div>
-          <label class="stamp">Arbiter model</label>
+          <label class="tag">Arbiter model</label>
           <div class="field-note">gpt-oss-20b reads each turn and confirms the lane. Turn this off to
             route on signal scoring alone — faster, slightly blunter.</div>
         </div>
@@ -1772,7 +1818,7 @@
     <div class="field">
       <div class="toggle">
         <div>
-          <label class="stamp">Name threads automatically</label>
+          <label class="tag">Name threads automatically</label>
           <div class="field-note">Titles the thread from its first exchange.</div>
         </div>
         <button class="switch" id="tgTitle" aria-pressed="true" aria-label="Name threads automatically"></button>
@@ -1780,7 +1826,7 @@
     </div>
 
     <div class="field">
-      <label class="stamp" for="tempRange">Temperature</label>
+      <label class="tag" for="tempRange">Temperature</label>
       <div class="slide">
         <input type="range" id="tempRange" min="0" max="1.5" step="0.05" value="0.7">
         <output id="tempOut">0.70</output>
@@ -1789,7 +1835,7 @@
     </div>
 
     <div class="field">
-      <label class="stamp" for="maxRange">Response limit</label>
+      <label class="tag" for="maxRange">Response limit</label>
       <div class="slide">
         <input type="range" id="maxRange" min="512" max="8192" step="256" value="4096">
         <output id="maxOut">4096</output>
@@ -1797,11 +1843,11 @@
       <div class="field-note">Maximum tokens in a single answer.</div>
     </div>
 
-    <div class="field" style="border-bottom:none">
-      <label class="stamp">Data</label>
+    <div class="field">
+      <label class="tag">Data</label>
       <div class="field-note">Threads live in this browser only. Nothing is stored on the server.</div>
-      <div class="persona-set">
-        <button class="persona" id="btnWipe">Delete all threads</button>
+      <div class="chips">
+        <button class="chip danger" id="btnWipe">Delete all threads</button>
       </div>
     </div>
   </div>
@@ -1816,28 +1862,32 @@
       const $ = (id) => document.getElementById(id);
       const KEY = 'nova.router.v1';
 
-      /* ── roster ──────────────────────────────────────────────────────
-         Mirrors api/_provider.js. The server still has the final say on
-         which model a lane resolves to. */
+      /* Icons come from the Hugeicons set, inlined as a sprite above. */
+      const ic = (name, size = 18) =>
+        `<svg class="ic" width="${size}" height="${size}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+      /* ── roster ───────────────────────────────────────────────────────
+         Mirrors api/_provider.js. The server has the final say on which
+         model a lane resolves to. */
       const LANES = {
         L1: {
           name: 'Swift', model: 'gpt-oss-20b', size: '20B', ctx: '131K',
-          price: { in: 0.10, out: 0.50 }, hue: 'var(--lamp-1)',
+          price: { in: 0.10, out: 0.50 }, hue: 'var(--l1)',
           use: 'Lookups, rewrites, short answers',
         },
         L2: {
           name: 'Broad', model: 'qwen3.6-27b', size: '27B', ctx: '131K',
-          price: { in: 0.32, out: 3.20 }, hue: 'var(--lamp-2)',
+          price: { in: 0.32, out: 3.20 }, hue: 'var(--l2)',
           use: 'Drafting, explanation, long context',
         },
         L3: {
           name: 'Deep', model: 'gpt-oss-120b', size: '120B', ctx: '131K',
-          price: { in: 0.15, out: 0.75 }, hue: 'var(--lamp-3)',
+          price: { in: 0.15, out: 0.75 }, hue: 'var(--l3)',
           use: 'Reasoning, math, code review',
         },
       };
       const LANE_IDS = ['L1', 'L2', 'L3'];
-      const hueOf = (lane) => (LANES[lane] ? LANES[lane].hue : 'var(--ink-3)');
+      const hueOf = (lane) => (LANES[lane] ? LANES[lane].hue : null);
 
       const STARTERS = [
         { lane: 'L1', text: 'Rewrite this sentence so a customer would understand it' },
@@ -1847,28 +1897,20 @@
       ];
 
       const PERSONAS = {
-        'Plain': 'Answer plainly. No preamble, no filler, no restating the question.',
-        'Engineer': 'You are a senior engineer. Give working code first, then a short note on trade-offs. Name the failure modes.',
-        'Editor': 'You are a line editor. Tighten prose, cut hedging, keep the writer\'s voice. Show the edit, then one sentence on why.',
-        'Tutor': 'Teach step by step. Check understanding before moving on. Use one worked example per idea.',
+        Plain: 'Answer plainly. No preamble, no filler, no restating the question.',
+        Engineer: 'You are a senior engineer. Give working code first, then a short note on trade-offs. Name the failure modes.',
+        Editor: 'You are a line editor. Tighten prose, cut hedging, keep the writer\'s voice. Show the edit, then one sentence on why.',
+        Tutor: 'Teach step by step. Check understanding before moving on. Use one worked example per idea.',
       };
 
       /* ── state ───────────────────────────────────────────────────── */
       const defaults = {
-        threads: {},
-        activeId: null,
-        theme: null,
-        mode: 'auto',
-        scope: true,
-        system: '',
-        arbiter: true,
-        autoTitle: true,
-        temperature: 0.7,
-        maxTokens: 4096,
+        threads: {}, activeId: null, theme: null, mode: 'auto', scope: true,
+        system: '', arbiter: true, autoTitle: true, temperature: 0.7, maxTokens: 4096,
       };
 
       let state = load();
-      let stream = null;      // AbortController for the turn in flight
+      let stream = null;
       let busy = false;
       let lastRoute = null;
       let query = '';
@@ -1902,8 +1944,7 @@
       /* If the CDN is blocked or slow, answers still have to be readable.
          This covers fences, inline code and paragraphs — nothing more. */
       function plainMarkdown(src) {
-        const parts = escapeHtml(src).split(/```/);
-        return parts.map((chunk, i) => i % 2
+        return escapeHtml(src).split(/```/).map((chunk, i) => i % 2
           ? `<pre><code>${chunk.replace(/^\w*\n/, '')}</code></pre>`
           : chunk
             .replace(/`([^`\n]+)`/g, '<code>$1</code>')
@@ -1920,9 +1961,9 @@
         doc.querySelectorAll('*').forEach((el) => {
           [...el.attributes].forEach((attr) => {
             const name = attr.name.toLowerCase();
-            const value = attr.value.trim().toLowerCase();
             if (name.startsWith('on')) el.removeAttribute(attr.name);
-            if ((name === 'href' || name === 'src') && value.startsWith('javascript:')) {
+            if ((name === 'href' || name === 'src')
+              && attr.value.trim().toLowerCase().startsWith('javascript:')) {
               el.removeAttribute(attr.name);
             }
           });
@@ -1943,11 +1984,11 @@
           if (pre.querySelector('.copy-code')) return;
           const btn = document.createElement('button');
           btn.className = 'copy-code';
-          btn.textContent = 'COPY';
+          btn.textContent = 'Copy';
           btn.onclick = () => {
             copy(code.textContent);
-            btn.textContent = 'COPIED';
-            setTimeout(() => { btn.textContent = 'COPY'; }, 1400);
+            btn.textContent = 'Copied';
+            setTimeout(() => { btn.textContent = 'Copy'; }, 1400);
           };
           pre.appendChild(btn);
         });
@@ -1955,17 +1996,16 @@
 
       /* ── estimation ──────────────────────────────────────────────── */
       const estTokens = (text) => Math.ceil((text || '').length / 4);
-
-      function costOf(lane, inTok, outTok) {
+      const costOf = (lane, inTok, outTok) => {
         const p = (LANES[lane] || LANES.L2).price;
         return (inTok / 1e6) * p.in + (outTok / 1e6) * p.out;
-      }
-
+      };
       const money = (n) => '$' + n.toFixed(n < 0.01 ? 4 : 3);
 
-      /* Mirror of the scorer in api/route.js, so the lane shown under the
-         composer matches the lane the server actually picks. Keep the two in
-         step — a preview that contradicts the answer is worse than none. */
+      /* ── lane preview ─────────────────────────────────────────────
+         Mirror of the scorer in api/route.js, so the lane shown under the
+         composer matches the lane the server actually picks. Keep the two
+         in step — a preview that contradicts the answer is worse than none. */
       const R_TERMS = ['prove', 'proof', 'derive', 'analyz', 'analys', 'compare', 'contrast',
         'differ', 'versus', ' vs ', 'pros and cons', 'trade-off', 'tradeoff', 'evaluate',
         'critique', 'architect', 'design', 'optimi', 'strategy', 'why does', 'why is',
@@ -2031,20 +2071,17 @@
       function paintBoard() {
         $('board').innerHTML = LANE_IDS.map((id) => {
           const l = LANES[id];
-          return `<div class="lane-row" style="--lane-hue:${l.hue}">
-            <span class="lane-bar"></span>
-            <span class="lane-id">${id} ${l.name.toUpperCase()}</span>
-            <span>
-              <span class="lane-model">${l.model}</span>
-              <span class="lane-use">${l.use}</span>
-            </span>
-            <span class="lane-cost">${l.price.in.toFixed(2)} in · ${l.price.out.toFixed(2)} out</span>
-          </div>`;
+          return `<article class="lane-card" style="--lane:${l.hue}">
+            <div class="lane-head"><span>${id} ${l.name.toUpperCase()}</span><span>${l.size}</span></div>
+            <h3 class="lane-model">${l.model}</h3>
+            <p class="lane-use">${l.use}</p>
+            <div class="lane-price">$${l.price.in.toFixed(2)} in · $${l.price.out.toFixed(2)} out</div>
+          </article>`;
         }).join('');
 
         $('starters').innerHTML = STARTERS.map((s, i) =>
-          `<button class="starter" data-i="${i}" style="--lane-hue:${hueOf(s.lane)}">
-             <span class="stamp">${s.lane}</span><span>${s.text}</span>
+          `<button class="starter" data-i="${i}" style="--lane:${hueOf(s.lane)}">
+             <span class="starter-tag">${s.lane}</span><span>${s.text}</span>${ic('escalate', 17)}
            </button>`).join('');
 
         $('starters').querySelectorAll('.starter').forEach((btn) => {
@@ -2056,18 +2093,18 @@
           };
         });
 
-        $('ladder').innerHTML = Array.from({ length: 24 }, () => '<span class="rung"></span>').join('');
+        $('ladder').innerHTML = '<span class="rung"></span>'.repeat(20);
 
         $('signals').innerHTML = ['reasoning', 'code', 'breadth', 'context'].map((k) =>
           `<div class="signal">
-             <span>${k}</span>
-             <span class="signal-track"><span class="signal-fill" id="sig-${k}" style="width:0%"></span></span>
+             <span>${k[0].toUpperCase() + k.slice(1)}</span>
              <span class="signal-val" id="sigv-${k}">—</span>
+             <span class="signal-track"><span class="signal-fill" id="sig-${k}" style="width:0%"></span></span>
            </div>`).join('');
 
         $('personas').innerHTML = Object.keys(PERSONAS)
-          .map((n) => `<button class="persona" data-p="${n}">${n}</button>`).join('');
-        $('personas').querySelectorAll('.persona').forEach((btn) => {
+          .map((n) => `<button class="chip" data-p="${n}">${n}</button>`).join('');
+        $('personas').querySelectorAll('.chip').forEach((btn) => {
           btn.onclick = () => {
             $('sysPrompt').value = PERSONAS[btn.dataset.p];
             state.system = PERSONAS[btn.dataset.p];
@@ -2078,43 +2115,36 @@
       }
 
       function paintRoster() {
-        const hits = {};
-        Object.values(state.threads).forEach((t) =>
-          t.turns.forEach((m) => {
-            if (m.route) hits[m.route.lane] = (hits[m.route.lane] || 0) + 1;
-          }));
+        const tally = {};
+        Object.values(state.threads).forEach((t) => t.turns.forEach((m) => {
+          if (m.route) tally[m.route.lane] = (tally[m.route.lane] || 0) + 1;
+        }));
 
         $('roster').innerHTML = LANE_IDS.map((id) => {
           const l = LANES[id];
-          const live = lastRoute && lastRoute.lane === id;
-          const n = hits[id] || 0;
-          return `<div class="roster-row" data-live="${live}" style="--lane-hue:${l.hue}">
-            <span class="roster-pip"></span>
-            <span>
-              <span class="roster-name">${l.model}</span><br>
-              <span class="roster-meta">${id} · ${l.size} · ${l.ctx} ctx</span>
-            </span>
-            <span class="roster-hits">${n}<br><span class="roster-meta">${n === 1 ? 'turn' : 'turns'}</span></span>
+          const n = tally[id] || 0;
+          return `<div class="roster-row" data-live="${lastRoute?.lane === id}" style="--lane:${l.hue}">
+            <span class="roster-dot"></span>
+            <span class="roster-name">${l.model}</span>
+            <span class="roster-hits">${n} ${n === 1 ? 'turn' : 'turns'}</span>
           </div>`;
         }).join('');
       }
 
-      /* ── router inspector ────────────────────────────────────────── */
       function paintScope(route) {
-        const scope = $('scope');
-        if (!route) {
-          scope.style.removeProperty('--lane-hue');
-          return;
-        }
+        if (!route) return;
         lastRoute = route;
-        scope.style.setProperty('--lane-hue', hueOf(route.lane));
 
-        $('vLane').textContent = `${route.lane} ${LANES[route.lane].name}`;
-        $('vModel').textContent = LANES[route.lane].model;
+        const card = $('verdict');
+        card.classList.remove('idle');
+        card.style.setProperty('--lane', hueOf(route.lane));
+
+        $('vLane').textContent = LANES[route.lane].name.toUpperCase();
+        $('vModel').textContent = `${route.lane} · ${LANES[route.lane].model}`;
         $('vWhy').textContent = route.why || '—';
-        $('vScore').textContent = `COMPLEXITY ${route.complexity}`;
-        $('vUpstream').textContent = route.upstream || '—';
+        $('vScore').textContent = route.complexity;
         $('vBy').textContent = route.decidedBy || '—';
+        $('vUpstream').textContent = route.upstream || '—';
         $('vLat').textContent = route.latencyMs != null ? `${route.latencyMs} ms` : '—';
 
         const rungs = $('ladder').children;
@@ -2141,14 +2171,13 @@
 
         let items = Object.values(state.threads);
         if (q) {
-          items = items.filter((t) =>
-            (t.title || '').toLowerCase().includes(q) ||
-            t.turns.some((m) => m.content.toLowerCase().includes(q)));
+          items = items.filter((t) => (t.title || '').toLowerCase().includes(q)
+            || t.turns.some((m) => m.content.toLowerCase().includes(q)));
         }
         items.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.ts - a.ts);
 
         if (!items.length) {
-          list.innerHTML = `<p class="stamp" style="padding:16px 6px">${q ? 'No match' : 'No threads yet'}</p>`;
+          list.innerHTML = `<span class="tag empty-note">${q ? 'No match' : 'No threads yet'}</span>`;
           return;
         }
 
@@ -2162,30 +2191,21 @@
 
         list.innerHTML = Object.entries(groups)
           .filter(([, arr]) => arr.length)
-          .map(([label, arr]) => `<div class="stamp group-label">${label}</div>` + arr.map((t) => {
-            const lane = dominantLane(t);
-            return `<div class="thread-row" data-id="${t.id}" role="button" tabindex="0"
-                      aria-current="${t.id === state.activeId}" style="--lane-hue:${hueOf(lane)}">
-              <span class="thread-tick"></span>
+          .map(([label, arr]) => `<span class="tag group-label">${label}</span>` + arr.map((t) => `
+            <div class="thread-row" data-id="${t.id}" role="button" tabindex="0"
+                 aria-current="${t.id === state.activeId}" style="--lane:${hueOf(dominantLane(t)) || 'var(--fg-3)'}">
+              <span class="thread-dot"></span>
               <span class="thread-name">${escapeHtml(t.title || 'Untitled thread')}</span>
-              <button class="thread-act pin ${t.pinned ? 'pinned' : ''}" data-act="pin"
-                      aria-label="${t.pinned ? 'Unpin' : 'Pin'} thread">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="${t.pinned ? 'currentColor' : 'none'}"
-                     stroke="currentColor" stroke-width="2"><path d="M12 2 9 9l-6 1 5 4-2 8 6-4 6 4-2-8 5-4-6-1z"/></svg>
-              </button>
-              <button class="thread-act del" data-act="del" aria-label="Delete thread">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M18 6 6 18M6 6l12 12"/></svg>
-              </button>
-            </div>`;
-          }).join('')).join('');
+              <button class="thread-act pin ${t.pinned ? 'on' : ''}" data-act="pin"
+                      aria-label="${t.pinned ? 'Unpin' : 'Pin'} thread">${ic('pin', 15)}</button>
+              <button class="thread-act del" data-act="del" aria-label="Delete thread">${ic('trash', 15)}</button>
+            </div>`).join('')).join('');
 
         list.querySelectorAll('.thread-row').forEach((row) => {
           const id = row.dataset.id;
-          const open = () => openThread(id);
           row.onclick = (e) => {
             const act = e.target.closest('[data-act]');
-            if (!act) return open();
+            if (!act) return openThread(id);
             e.stopPropagation();
             if (act.dataset.act === 'pin') {
               state.threads[id].pinned = !state.threads[id].pinned;
@@ -2195,7 +2215,7 @@
             }
           };
           row.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openThread(id); }
           };
         });
       }
@@ -2213,7 +2233,7 @@
         save();
         paintThreads();
         paintFeed();
-        if (window.innerWidth <= 860) setRail(false);
+        if (window.innerWidth <= 880) setRail(false);
       }
 
       function newThread() {
@@ -2221,7 +2241,7 @@
         save();
         paintThreads();
         paintFeed();
-        if (window.innerWidth <= 860) setRail(false);
+        if (window.innerWidth <= 880) setRail(false);
         focusInput(true);
       }
 
@@ -2229,9 +2249,7 @@
         delete state.threads[id];
         if (state.activeId === id) state.activeId = null;
         save();
-        paintThreads();
-        paintFeed();
-        paintStats();
+        paintThreads(); paintFeed(); paintStats();
         toast('Thread deleted');
       }
 
@@ -2241,6 +2259,7 @@
         const feed = $('thread');
         feed.innerHTML = '';
         $('hero').style.display = thread && thread.turns.length ? 'none' : 'block';
+
         if (!thread || !thread.turns.length) {
           $('scroll').scrollTop = 0; // land on the hero, not below it
           paintStats();
@@ -2255,7 +2274,6 @@
       function buildTurn(turn, index) {
         const el = document.createElement('article');
         el.className = `turn ${turn.role}`;
-        el.dataset.index = index;
 
         if (turn.role === 'user') {
           const said = document.createElement('div');
@@ -2266,47 +2284,45 @@
           const acts = document.createElement('div');
           acts.className = 'acts';
           acts.style.justifyContent = 'flex-end';
-          acts.appendChild(action('Edit', () => editTurn(index)));
-          acts.appendChild(action('Copy', () => { copy(turn.content); toast('Copied'); }));
+          acts.appendChild(action('Edit', 'edit', () => editTurn(index)));
+          acts.appendChild(action('Copy', 'copy', () => { copy(turn.content); toast('Copied'); }));
           el.appendChild(acts);
           return el;
         }
 
-        el.style.setProperty('--lane-hue', hueOf(turn.route?.lane));
-        el.appendChild(buildSlug(turn));
+        if (turn.route) el.style.setProperty('--lane', hueOf(turn.route.lane));
+        el.appendChild(buildStamp(turn));
 
         const prose = document.createElement('div');
         prose.className = 'prose';
-        if (turn.error) {
-          prose.innerHTML = `<div class="fault">${escapeHtml(turn.content)}</div>`;
-        } else {
-          prose.innerHTML = render(turn.content);
-        }
+        if (turn.error) prose.innerHTML = `<div class="fault">${escapeHtml(turn.content)}</div>`;
+        else prose.innerHTML = render(turn.content);
         el.appendChild(prose);
 
         if (!turn.streaming) {
           const acts = document.createElement('div');
           acts.className = 'acts';
-          acts.appendChild(action('Copy', () => { copy(turn.content); toast('Copied'); }));
-          acts.appendChild(action('Retry', () => regenerate(index)));
+          acts.appendChild(action('Copy', 'copy', () => { copy(turn.content); toast('Copied'); }));
+          acts.appendChild(action('Retry', 'retry', () => regenerate(index)));
           if (turn.route && turn.route.lane !== 'L3') {
-            acts.appendChild(action('Escalate to L3', () => regenerate(index, 'L3'), true));
+            acts.appendChild(action('Escalate to L3', 'flash', () => regenerate(index, 'L3'), true));
           }
           el.appendChild(acts);
         }
         return el;
       }
 
-      function buildSlug(turn) {
-        const slug = document.createElement('div');
-        slug.className = 'slug';
+      function buildStamp(turn) {
+        const stamp = document.createElement('div');
+        stamp.className = 'stamp';
         const r = turn.route;
 
         if (!r) {
-          slug.innerHTML = `<span class="slug-lane" style="--lane-hue:var(--ink-3)">ROUTING</span>
+          stamp.classList.add('pending');
+          stamp.innerHTML = `<span class="stamp-lane">${ic('magic', 14)} Routing</span>
             <span class="segs">${'<span class="seg"></span>'.repeat(5)}</span>
-            <span class="slug-why">scoring the turn…</span>`;
-          return slug;
+            <span class="stamp-why">scoring the turn…</span>`;
+          return stamp;
         }
 
         const lit = Math.max(1, Math.round((r.complexity / 100) * 5));
@@ -2318,19 +2334,19 @@
         if (turn.tokens) stats.push(`${turn.tokens} tok`);
         if (turn.cost) stats.push(money(turn.cost));
 
-        slug.innerHTML = `
-          <span class="slug-lane">${r.lane} ${LANES[r.lane].name.toUpperCase()}</span>
+        stamp.innerHTML = `
+          <span class="stamp-lane">${r.lane} ${LANES[r.lane].name.toUpperCase()}</span>
           <span class="segs" title="Complexity ${r.complexity}">${segs}</span>
-          <span>${LANES[r.lane].model}</span>
-          <span class="slug-why">${escapeHtml(r.why || '')}</span>
-          ${stats.length ? `<span class="slug-stat">${stats.join(' · ')}</span>` : ''}`;
-        return slug;
+          <span class="stamp-model">${LANES[r.lane].model}</span>
+          <span class="stamp-why">${escapeHtml(r.why || '')}</span>
+          ${stats.length ? `<span class="stamp-stats">${stats.join(' · ')}</span>` : ''}`;
+        return stamp;
       }
 
-      function action(label, fn, hot) {
+      function action(label, iconName, fn, hot) {
         const b = document.createElement('button');
         b.className = 'act' + (hot ? ' hot' : '');
-        b.textContent = label;
+        b.innerHTML = `${ic(iconName, 15)}<span>${label}</span>`;
         b.onclick = fn;
         return b;
       }
@@ -2344,7 +2360,7 @@
           tokens += m.tokens || estTokens(m.content);
           cost += m.cost || 0;
         }));
-        $('statTurns').innerHTML = `<b>${turns}</b> ${turns === 1 ? 'turn' : 'turns'}`;
+        $('statTurns').textContent = `${turns} ${turns === 1 ? 'turn' : 'turns'}`;
         $('statTokens').textContent = tokens.toLocaleString();
         $('statCost').textContent = money(cost);
       }
@@ -2358,7 +2374,7 @@
          body, which Chromium will still shift under `overflow: hidden`. On a
          phone it also opens the keyboard over the page, so skip it there. */
       function focusInput(force) {
-        if (!force && window.innerWidth <= 860) return;
+        if (!force && window.innerWidth <= 880) return;
         $('input').focus({ preventScroll: true });
       }
 
@@ -2387,12 +2403,11 @@
 
       /* Ask the router which lane, then stream from that lane. */
       async function answer(thread, forceLane) {
-        const feed = $('thread');
         const slot = { role: 'assistant', content: '', route: null, streaming: true };
         thread.turns.push(slot);
 
         const el = buildTurn(slot, thread.turns.length - 1);
-        feed.appendChild(el);
+        $('thread').appendChild(el);
         jump();
         setBusy(true);
 
@@ -2422,8 +2437,8 @@
 
         slot.route = route;
         paintScope(route);
-        el.style.setProperty('--lane-hue', hueOf(route.lane));
-        el.replaceChild(buildSlug(slot), el.querySelector('.slug'));
+        el.style.setProperty('--lane', hueOf(route.lane));
+        el.replaceChild(buildStamp(slot), el.querySelector('.stamp'));
 
         // 2. answer
         const started = performance.now();
@@ -2465,8 +2480,7 @@
           const decoder = new TextDecoder();
           let buffer = '';
 
-          // SSE frames can split across chunks; keep a buffer and only
-          // consume complete lines.
+          // SSE frames can split across chunks; buffer and consume whole lines.
           outer: while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -2496,14 +2510,13 @@
           }
 
           if (frame) cancelAnimationFrame(frame);
+          const inTok = estTokens(history.map((m) => m.content).join(''));
           slot.content = text || '(empty response)';
           slot.ms = Math.round(performance.now() - started);
-          slot.tokens = usage?.total_tokens || estTokens(history.map((m) => m.content).join('') + text);
-          slot.cost = costOf(
-            route.lane,
-            usage?.prompt_tokens ?? estTokens(history.map((m) => m.content).join('')),
-            usage?.completion_tokens ?? estTokens(text),
-          );
+          slot.tokens = usage?.total_tokens || inTok + estTokens(text);
+          slot.cost = costOf(route.lane,
+            usage?.prompt_tokens ?? inTok,
+            usage?.completion_tokens ?? estTokens(text));
         } catch (err) {
           if (frame) cancelAnimationFrame(frame);
           if (err.name === 'AbortError') {
@@ -2532,13 +2545,9 @@
         const fallback = () => {
           const guess = previewLane(ask) || { lane: 'L2', score: 50 };
           return {
-            lane: guess.lane,
-            complexity: guess.score,
+            lane: guess.lane, complexity: guess.score,
             why: 'Routed locally — router unreachable',
-            decidedBy: 'local',
-            signals: {},
-            latencyMs: 0,
-            upstream: '—',
+            decidedBy: 'local', signals: {}, latencyMs: 0, upstream: '—',
           };
         };
         try {
@@ -2602,53 +2611,63 @@
         btn.classList.toggle('stop', on);
         btn.disabled = on ? false : !$('input').value.trim();
         btn.setAttribute('aria-label', on ? 'Stop generating' : 'Send message');
-        btn.innerHTML = on
-          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
-          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h13M12 5l6 7-6 7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        btn.innerHTML = ic(on ? 'stop' : 'send', 19);
       }
 
       /* ── composer ────────────────────────────────────────────────── */
       function resizeInput() {
         const ta = $('input');
         ta.style.height = 'auto';
-        ta.style.height = Math.min(ta.scrollHeight, 210) + 'px';
+        ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
       }
 
       function updatePredict() {
         const text = $('input').value;
         const dock = $('predict');
         const shell = document.querySelector('.console');
+        const btn = $('btnSend');
+        let lane = null;
 
         if (state.mode !== 'auto') {
           const l = LANES[state.mode];
-          dock.innerHTML = `Pinned <b>${state.mode} ${l.name}</b> · ${l.model}`;
-          shell.style.setProperty('--lane-hue', l.hue);
+          dock.innerHTML = `Pinned <b>${state.mode} ${l.name}</b> ${l.model}`;
+          lane = state.mode;
         } else {
           const guess = previewLane(text);
-          if (!guess) {
-            dock.innerHTML = 'Auto routing';
-            shell.style.removeProperty('--lane-hue');
-          } else {
-            dock.innerHTML = `Predicted <b>${guess.lane} ${LANES[guess.lane].name}</b> · complexity ${guess.score}`;
-            shell.style.setProperty('--lane-hue', hueOf(guess.lane));
+          if (!guess) dock.innerHTML = 'Auto routing';
+          else {
+            dock.innerHTML = `Predicted <b>${guess.lane} ${LANES[guess.lane].name}</b> complexity ${guess.score}`;
+            lane = guess.lane;
           }
         }
 
+        dock.classList.toggle('has-lane', !!lane);
+        [dock, shell, btn].forEach((el) => {
+          if (lane) el.style.setProperty('--lane', hueOf(lane));
+          else el.style.removeProperty('--lane');
+        });
+        btn.classList.toggle('armed', !!lane && !!text.trim());
+
         const n = estTokens(text);
         $('count').textContent = n ? `~${n} tok` : '';
-        $('btnSend').disabled = busy ? false : !text.trim();
+        btn.disabled = busy ? false : !text.trim();
       }
 
       /* ── modes, theme, panels ────────────────────────────────────── */
       function setMode(mode) {
         state.mode = mode;
         save();
-        const hue = mode === 'auto' ? null : hueOf(mode);
         $('selector').querySelectorAll('.pos').forEach((b) => {
           const on = b.dataset.lane === mode;
           b.setAttribute('aria-pressed', String(on));
-          if (on && hue) b.style.setProperty('--lane-hue', hue);
-          else b.style.removeProperty('--lane-hue');
+          const hue = hueOf(b.dataset.lane);
+          if (on && hue) {
+            b.style.setProperty('--lane', hue);
+            b.style.setProperty('--lane-fg', 'var(--on-lane)');
+          } else {
+            b.style.removeProperty('--lane');
+            b.style.removeProperty('--lane-fg');
+          }
         });
         updatePredict();
       }
@@ -2656,9 +2675,7 @@
       function setTheme(theme) {
         state.theme = theme;
         document.documentElement.setAttribute('data-theme', theme);
-        $('btnTheme').innerHTML = theme === 'dark'
-          ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8" stroke-linecap="round"/></svg>'
-          : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+        $('btnTheme').innerHTML = ic(theme === 'dark' ? 'sun' : 'moon', 20);
         save();
       }
 
@@ -2666,49 +2683,43 @@
         state.scope = on;
         $('shell').dataset.scope = on ? 'on' : 'off';
         $('btnScope').setAttribute('aria-pressed', String(on));
-        if (window.innerWidth <= 1180) setScrim(on);
+        if (window.innerWidth <= 1200) setScrim(on);
         save();
       }
 
-      function setRail(on) {
-        $('shell').dataset.rail = on ? 'on' : 'off';
-        setScrim(on);
-      }
-
-      function setScrim(on) {
-        $('scrim').classList.toggle('on', on);
-      }
+      const setRail = (on) => { $('shell').dataset.rail = on ? 'on' : 'off'; setScrim(on); };
+      const setScrim = (on) => $('scrim').classList.toggle('on', on);
 
       /* ── palette ─────────────────────────────────────────────────── */
       const COMMANDS = [
-        { label: 'New thread', keys: 'Ctrl N', run: newThread },
-        { label: 'Route automatically', run: () => setMode('auto') },
-        { label: 'Pin lane L1 — gpt-oss-20b', run: () => setMode('L1') },
-        { label: 'Pin lane L2 — qwen3.6-27b', run: () => setMode('L2') },
-        { label: 'Pin lane L3 — gpt-oss-120b', run: () => setMode('L3') },
-        { label: 'Toggle router panel', run: () => setScope(!state.scope) },
-        { label: 'Switch theme', run: () => setTheme(state.theme === 'dark' ? 'light' : 'dark') },
-        { label: 'Open settings', run: () => openModal('settings') },
-        { label: 'Export thread as Markdown', run: () => exportThread('md') },
-        { label: 'Export thread as JSON', run: () => exportThread('json') },
-        { label: 'Rename this thread', run: renameThread },
-        { label: 'Delete this thread', run: () => state.activeId && removeThread(state.activeId) },
+        { label: 'New thread', icon: 'add', keys: 'Ctrl N', run: newThread },
+        { label: 'Route automatically', icon: 'magic', run: () => setMode('auto') },
+        { label: 'Pin lane L1 — gpt-oss-20b', icon: 'flash', run: () => setMode('L1') },
+        { label: 'Pin lane L2 — qwen3.6-27b', icon: 'flash', run: () => setMode('L2') },
+        { label: 'Pin lane L3 — gpt-oss-120b', icon: 'flash', run: () => setMode('L3') },
+        { label: 'Toggle router panel', icon: 'router', run: () => setScope(!state.scope) },
+        { label: 'Switch theme', icon: 'sun', run: () => setTheme(state.theme === 'dark' ? 'light' : 'dark') },
+        { label: 'Open settings', icon: 'sliders', run: () => openModal('settings') },
+        { label: 'Export thread as Markdown', icon: 'download', run: () => exportThread('md') },
+        { label: 'Export thread as JSON', icon: 'download', run: () => exportThread('json') },
+        { label: 'Rename this thread', icon: 'edit', run: renameThread },
+        { label: 'Delete this thread', icon: 'trash', run: () => state.activeId && removeThread(state.activeId) },
       ];
 
       let cmdIndex = 0;
 
       function paintCommands() {
         const q = $('cmdInput').value.toLowerCase();
-        const hits = COMMANDS.filter((c) => c.label.toLowerCase().includes(q));
-        cmdIndex = Math.min(cmdIndex, Math.max(0, hits.length - 1));
-        $('cmdList').innerHTML = hits.length
-          ? hits.map((c, i) => `<button class="cmd" data-i="${i}" data-on="${i === cmdIndex}">
-               <span>${c.label}</span>${c.keys ? `<kbd>${c.keys}</kbd>` : ''}</button>`).join('')
-          : '<p class="stamp" style="padding:14px">No command matches</p>';
+        const list = COMMANDS.filter((c) => c.label.toLowerCase().includes(q));
+        cmdIndex = Math.min(cmdIndex, Math.max(0, list.length - 1));
+        $('cmdList').innerHTML = list.length
+          ? list.map((c, i) => `<button class="cmd" data-i="${i}" data-on="${i === cmdIndex}">
+               ${ic(c.icon, 17)}<span>${c.label}</span>${c.keys ? `<kbd>${c.keys}</kbd>` : ''}</button>`).join('')
+          : '<span class="tag empty-note">No command matches</span>';
         $('cmdList').querySelectorAll('.cmd').forEach((btn) => {
-          btn.onclick = () => { closeModals(); hits[Number(btn.dataset.i)].run(); };
+          btn.onclick = () => { closeModals(); list[Number(btn.dataset.i)].run(); };
         });
-        return hits;
+        return list;
       }
 
       function openModal(id) {
@@ -2727,7 +2738,7 @@
         $('palette').classList.remove('on');
         $('settings').classList.remove('on');
         setRail(false);
-        if (window.innerWidth <= 1180 && state.scope) setScope(false);
+        if (window.innerWidth <= 1200 && state.scope) setScope(false);
         setScrim(false);
       }
 
@@ -2769,16 +2780,13 @@
         paintThreads();
       }
 
-      const slugify = (s) => (s || 'thread').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'thread';
+      const slugify = (s) => (s || 'thread').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'thread';
 
-      function escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, (c) =>
-          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-      }
+      const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-      function copy(text) {
-        navigator.clipboard?.writeText(text).catch(() => { });
-      }
+      const copy = (text) => navigator.clipboard?.writeText(text).catch(() => { });
 
       let toastTimer = null;
       function toast(message) {
@@ -2811,7 +2819,7 @@
       $('input').onkeydown = (e) => {
         // On touch-sized screens Enter belongs to the keyboard's newline;
         // sending is the button's job.
-        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.innerWidth > 860) {
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.innerWidth > 880) {
           e.preventDefault();
           if (!busy) send();
         }
@@ -2824,10 +2832,10 @@
 
       $('cmdInput').oninput = () => { cmdIndex = 0; paintCommands(); };
       $('cmdInput').onkeydown = (e) => {
-        const hits = paintCommands();
-        if (e.key === 'ArrowDown') { e.preventDefault(); cmdIndex = Math.min(cmdIndex + 1, hits.length - 1); paintCommands(); }
+        const list = paintCommands();
+        if (e.key === 'ArrowDown') { e.preventDefault(); cmdIndex = Math.min(cmdIndex + 1, list.length - 1); paintCommands(); }
         if (e.key === 'ArrowUp') { e.preventDefault(); cmdIndex = Math.max(cmdIndex - 1, 0); paintCommands(); }
-        if (e.key === 'Enter' && hits[cmdIndex]) { e.preventDefault(); closeModals(); hits[cmdIndex].run(); }
+        if (e.key === 'Enter' && list[cmdIndex]) { e.preventDefault(); closeModals(); list[cmdIndex].run(); }
       };
 
       document.addEventListener('keydown', (e) => {
@@ -2838,7 +2846,6 @@
         if (e.key === 'Escape') closeModals();
       });
 
-      // settings
       $('sysPrompt').oninput = (e) => { state.system = e.target.value; save(); };
       $('tgArbiter').onclick = () => {
         state.arbiter = !state.arbiter;
@@ -2870,7 +2877,7 @@
       };
 
       window.addEventListener('resize', () => {
-        if (window.innerWidth > 1180) setScrim(false);
+        if (window.innerWidth > 1200) setScrim(false);
       });
 
       /* ── boot ────────────────────────────────────────────────────── */
@@ -2878,7 +2885,8 @@
       paintRoster();
       setTheme(state.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
       setMode(state.mode);
-      setScope(window.innerWidth > 1180 ? state.scope : false);
+      setScope(window.innerWidth > 1200 ? state.scope : false);
+      setBusy(false);
       $('sysPrompt').value = state.system;
       $('tgArbiter').setAttribute('aria-pressed', String(state.arbiter));
       $('tgTitle').setAttribute('aria-pressed', String(state.autoTitle));
