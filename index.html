@@ -606,9 +606,15 @@
       }
     }
 
+    /* Column, not row: .said and .acts are two separate children (bubble,
+       then its action row). A row direction — the previous rule — lays them
+       out side by side instead of stacked, which was invisible while .acts
+       was hover-only (opacity: 0 on touch) and only became visible once that
+       was fixed to always show on touch devices. */
     .turn.user {
       display: flex;
-      justify-content: flex-end;
+      flex-direction: column;
+      align-items: flex-end;
     }
 
     .said {
@@ -1917,9 +1923,25 @@
          actual visible area, so it drives --app-h as the authoritative
          height (see body's height cascade in the stylesheet). */
       function syncViewportHeight() {
+        const scroll = $('scroll');
+        // Read before the height changes — clientHeight after would already
+        // reflect the new, shrunk viewport, giving a false "not at bottom".
+        const wasAtBottom = scroll
+          && scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 48;
+
         const vv = window.visualViewport;
         const h = vv ? vv.height : window.innerHeight;
         document.documentElement.style.setProperty('--app-h', `${h}px`);
+
+        // The keyboard opening shrinks .scroll's visible height but never
+        // moves scrollTop on its own, so content that was already scrolled
+        // to the bottom ends up with its tail — the action row under the
+        // last answer — hidden behind the composer. Re-pin to bottom only
+        // when the user was already there; never yank someone reading
+        // earlier messages down just because the keyboard opened.
+        if (wasAtBottom) {
+          requestAnimationFrame(() => { scroll.scrollTop = scroll.scrollHeight; });
+        }
       }
       syncViewportHeight();
       if (window.visualViewport) {
