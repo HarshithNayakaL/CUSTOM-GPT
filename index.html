@@ -1632,6 +1632,19 @@
       }
     }
 
+    /* Hover-reveal is a mouse-only affordance — on a touchscreen the
+       delete/pin icons, message actions, and code copy button never had a
+       hover state to reveal them, so they were simply unreachable. Force
+       them visible wherever there's no hover to begin with, regardless of
+       viewport width (covers touch tablets and touch laptops too). */
+    @media (hover: none) {
+      .thread-act,
+      .acts,
+      .copy-code {
+        opacity: 1;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *,
       *::before,
