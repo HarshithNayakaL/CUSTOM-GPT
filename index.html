@@ -4,795 +4,2892 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Nova AI | Advanced Intelligence</title>
+  <meta name="description" content="Nova routes every prompt to the model that suits it: gpt-oss-20b, qwen3.6-27b, or gpt-oss-120b.">
+  <title>Nova — Model Router</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=Fraunces:opsz,wght@9..144,100..900&display=swap"
-    rel="stylesheet">
   <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
+    href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..125,400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
 
   <style>
+    /* ══ tokens ══════════════════════════════════════════════════════════
+       Colour carries one meaning in this interface: which lane answered.
+       Chrome is graphite and ice; the three cable hues are never decorative. */
     :root {
-      --bg: #171717;
-      --sidebar-bg: #111111;
-      --surface: #212121;
-      --surface-hover: #2a2a2a;
-      --border: rgba(255, 255, 255, 0.08);
-      --text-main: #ececec;
-      --text-dim: #9b9b9b;
-      --accent: #d97757;
-      --accent-soft: rgba(217, 119, 87, 0.1);
-      --font-serif: "Fraunces", serif;
-      --font-sans: "Inter", sans-serif;
-      --ease: cubic-bezier(0.2, 0, 0, 1);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      --void: #0B1015;
+      --panel: #111A21;
+      --panel-2: #17222B;
+      --panel-3: #1E2C37;
+      --edge: #253440;
+      /* Recessed groove behind every meter. Must read as *unlit* in both
+         themes — a white track on a pale panel looks like a full reading. */
+      --track: #202E39;
+      --ink: #E4ECF2;
+      --ink-2: #8A9BA8;
+      --ink-3: #5C6D7A;
+      --lamp-1: #35E0C4;
+      --lamp-2: #FFB454;
+      --lamp-3: #9584FF;
+      --danger: #FF6B6B;
+      --glow: 0.35;
+
+      --display: "Anybody", "Arial Narrow", sans-serif;
+      --body: "Instrument Sans", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+
+      --rail-w: 264px;
+      --scope-w: 296px;
+      --snap: 140ms cubic-bezier(.2, .7, .3, 1);
+      --lift: 0 18px 44px -16px rgba(0, 0, 0, .7);
     }
 
-    [data-theme="light"] {
-      --bg: #f9f9f9;
-      --sidebar-bg: #f3f3f3;
-      --surface: #ffffff;
-      --surface-hover: #f0f0f0;
-      --border: rgba(0, 0, 0, 0.08);
-      --text-main: #1a1a1a;
-      --text-dim: #6e6e6e;
-      --accent: #d25f3c;
-      --accent-soft: rgba(210, 95, 60, 0.05);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    :root[data-theme="light"] {
+      --void: #D9E1E7;
+      --panel: #E9EFF3;
+      --panel-2: #F4F7F9;
+      --panel-3: #FFFFFF;
+      --edge: #C0CDD7;
+      --track: #CBD6DE;
+      --ink: #0B1319;
+      --ink-2: #51636E;
+      --ink-3: #7A8C97;
+      --lamp-1: #00887A;
+      --lamp-2: #9C5E06;
+      --lamp-3: #5644CE;
+      --danger: #C4342F;
+      --glow: 0.14;
+      --lift: 0 18px 44px -20px rgba(20, 40, 60, .35);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      outline: none;
     }
 
     html,
     body {
       height: 100%;
-      width: 100%;
       overflow: hidden;
-      font-family: var(--font-sans);
-      background: var(--bg);
-      color: var(--text-main);
     }
 
-    .app-container {
-      display: flex;
-      height: 100%;
-      width: 100%;
+    body {
+      background: var(--void);
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Sidebar Logic */
-    .sidebar {
-      width: 260px;
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      z-index: 1000;
-      transition: transform 0.3s var(--ease), width 0.3s var(--ease);
+    :focus-visible {
+      outline: 2px solid var(--lane-hue, var(--lamp-2));
+      outline-offset: 2px;
+      border-radius: 3px;
     }
 
-    @media (max-width: 900px) {
-      .sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
-        transform: translateX(-100%);
-      }
-
-      .sidebar.open {
-        transform: translateX(0);
-      }
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
     }
 
-    .sb-header {
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-serif);
-      font-weight: 700;
-      font-size: 18px;
-      color: var(--accent);
-    }
-
-    .btn-new {
-      margin: 10px 20px;
-      padding: 12px;
-      border-radius: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: 0.2s;
-    }
-
-    .btn-new:hover {
-      background: var(--surface-hover);
-      border-color: var(--accent);
-    }
-
-    .chat-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .chat-item {
-      padding: 10px 14px;
+    ::-webkit-scrollbar-thumb {
+      background: var(--edge);
+      border: 3px solid transparent;
+      background-clip: content-box;
       border-radius: 10px;
-      font-size: 14px;
-      color: var(--text-dim);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: 0.2s;
     }
 
-    .chat-item:hover,
-    .chat-item.active {
-      background: var(--surface);
-      color: var(--text-main);
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
 
-    .chat-item.active {
-      border: 1px solid var(--border);
+    /* Small caps engraving used on every hardware-style label. */
+    .stamp {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--ink-3);
     }
 
-    .chat-item .title {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    /* ══ shell ══════════════════════════════════════════════════════════ */
+    .shell {
+      display: grid;
+      grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--scope-w);
+      height: 100%;
     }
 
-    .chat-item .btn-del {
-      opacity: 0;
-      transition: 0.2s;
+    .shell[data-scope="off"] {
+      grid-template-columns: var(--rail-w) minmax(0, 1fr) 0;
     }
 
-    .chat-item:hover .btn-del {
-      opacity: 1;
-      color: #ef4444;
-    }
-
-    /* Main Workspace */
-    .main {
-      flex: 1;
+    /* ══ rail (threads) ═════════════════════════════════════════════════ */
+    .rail {
+      background: var(--panel);
+      border-right: 1px solid var(--edge);
       display: flex;
       flex-direction: column;
-      min-width: 0;
-      position: relative;
+      min-height: 0;
+      z-index: 40;
     }
 
-    .header {
-      height: 64px;
+    .rail-top {
+      padding: 18px 16px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-    }
-
-    .nav-l,
-    .nav-r {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .icon-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: 0.2s;
-      background: none;
-      border: none;
-    }
-
-    .icon-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text-main);
-    }
-
-    .model-select {
-      padding: 6px 14px;
-      border-radius: 100px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
       gap: 8px;
     }
 
-    .viewport {
+    .mark {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--display);
+      font-variation-settings: "wdth" 88;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    /* Three stacked cables — the product in one glyph. */
+    .mark-glyph {
+      width: 22px;
+      height: 22px;
+      flex: none;
+    }
+
+    .btn-new {
+      margin: 0 16px 12px;
+      padding: 10px 12px;
+      background: var(--panel-3);
+      border: 1px solid var(--edge);
+      border-radius: 7px;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .btn-new:hover {
+      border-color: var(--ink-3);
+      background: var(--panel-2);
+    }
+
+    .seek {
+      margin: 0 16px 10px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .seek svg {
+      position: absolute;
+      left: 9px;
+      color: var(--ink-3);
+      pointer-events: none;
+    }
+
+    .seek input {
+      width: 100%;
+      padding: 8px 10px 8px 30px;
+      background: var(--void);
+      border: 1px solid var(--edge);
+      border-radius: 7px;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .seek input::placeholder {
+      color: var(--ink-3);
+    }
+
+    .threads {
       flex: 1;
       overflow-y: auto;
+      padding: 4px 10px 10px;
+      min-height: 0;
+    }
+
+    .group-label {
+      padding: 14px 6px 6px;
+    }
+
+    .thread-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: none;
+      color: var(--ink-2);
+      font: inherit;
+      font-size: 13.5px;
+      text-align: left;
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .thread-row:hover {
+      background: var(--panel-2);
+      color: var(--ink);
+    }
+
+    .thread-row[aria-current="true"] {
+      background: var(--panel-3);
+      border-color: var(--edge);
+      color: var(--ink);
+    }
+
+    /* The thread's dominant lane shows as a hairline tick, not a badge. */
+    .thread-tick {
+      width: 2px;
+      height: 15px;
+      border-radius: 2px;
+      background: var(--lane-hue, var(--ink-3));
+      flex: none;
+      opacity: .85;
+    }
+
+    .thread-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .thread-act {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: var(--ink-3);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      border-radius: 4px;
+    }
+
+    .thread-row:hover .thread-act,
+    .thread-act:focus-visible {
+      opacity: 1;
+    }
+
+    .thread-act:hover {
+      color: var(--ink);
+    }
+
+    .thread-act.pinned {
+      opacity: 1;
+      color: var(--lamp-2);
+    }
+
+    .thread-act.del:hover {
+      color: var(--danger);
+    }
+
+    .rail-foot {
+      border-top: 1px solid var(--edge);
+      padding: 12px 16px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .meterline {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+
+    .meterline b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ══ stage ══════════════════════════════════════════════════════════ */
+    .stage {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--void);
+    }
+
+    .bar {
+      height: 58px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--edge);
+      background: var(--panel);
+    }
+
+    .bar-side {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: none;
+      color: var(--ink-2);
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .icon:hover {
+      background: var(--panel-3);
+      color: var(--ink);
+    }
+
+    .icon[aria-pressed="true"] {
+      color: var(--ink);
+      border-color: var(--edge);
+      background: var(--panel-3);
+    }
+
+    /* ── the selector: a recessed 4-position switch ── */
+    .selector {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      background: var(--void);
+      border: 1px solid var(--edge);
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .pos {
+      position: relative;
+      padding: 5px 11px;
+      border: none;
+      border-radius: 5px;
+      background: none;
+      color: var(--ink-3);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      cursor: pointer;
+      transition: var(--snap);
+      white-space: nowrap;
+    }
+
+    .pos:hover {
+      color: var(--ink-2);
+    }
+
+    .pos[aria-pressed="true"] {
+      background: var(--panel-3);
+      color: var(--ink);
+      box-shadow: inset 0 0 0 1px var(--edge);
+    }
+
+    /* The lamp above the engaged position is the only colour in the bar. */
+    .pos[aria-pressed="true"]::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -6px;
+      width: 14px;
+      height: 2px;
+      transform: translateX(-50%);
+      border-radius: 2px;
+      background: var(--lane-hue, var(--ink-2));
+      box-shadow: 0 0 8px color-mix(in srgb, var(--lane-hue, var(--ink-2)) calc(var(--glow) * 100%), transparent);
+    }
+
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
       scroll-behavior: smooth;
     }
 
-    .chat-container {
-      max-width: 800px;
+    .thread-wrap {
+      max-width: 780px;
       margin: 0 auto;
-      padding: 40px 20px 160px;
-      position: relative;
+      padding: 30px 24px 26px;
     }
 
-    .empty-state {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      height: 50vh;
-      font-size: 32px;
-      font-weight: 600;
-      color: var(--text-main);
-      letter-spacing: -0.02em;
+    /* ══ hero ═══════════════════════════════════════════════════════════ */
+    .hero {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 52px 24px 20px;
     }
 
-    .empty-state.active {
-      display: flex;
+    .hero h1 {
+      font-family: var(--display);
+      font-variation-settings: "wdth" 82;
+      font-weight: 800;
+      font-size: clamp(34px, 5.4vw, 54px);
+      line-height: .98;
+      letter-spacing: -.015em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
     }
 
-    .msg-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 32px;
-      animation: enter 0.3s forwards;
+    .hero h1 em {
+      font-style: normal;
+      font-variation-settings: "wdth" 118;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: -.02em;
+      color: var(--ink-2);
     }
 
-    @keyframes enter {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .hero p {
+      color: var(--ink-2);
+      max-width: 48ch;
+      margin-bottom: 30px;
     }
 
-    .msg-row.user {
-      flex-direction: row-reverse;
-    }
-
-    .avatar {
-      width: 32px;
-      height: 32px;
+    /* ── the board: three lanes, drawn as the patchbay they are ── */
+    .board {
+      border: 1px solid var(--edge);
       border-radius: 10px;
-      flex-shrink: 0;
+      overflow: hidden;
+      background: var(--panel);
+      margin-bottom: 26px;
+    }
+
+    .board-head {
       display: flex;
+      justify-content: space-between;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--edge);
+      background: var(--panel-2);
+    }
+
+    .lane-row {
+      display: grid;
+      grid-template-columns: 5px 76px minmax(0, 1fr) auto;
       align-items: center;
-      justify-content: center;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-dim);
+      gap: 14px;
+      padding: 13px 14px 13px 0;
+      border-bottom: 1px solid var(--edge);
     }
 
-    .msg-row.assistant .avatar {
-      background: var(--accent-soft);
-      color: var(--accent);
-      border-color: var(--accent);
+    .lane-row:last-child {
+      border-bottom: none;
     }
 
-    .msg-row.user .avatar {
-      background: var(--surface-hover);
-      color: var(--text-dim);
-      border-color: var(--border);
+    .lane-bar {
+      height: 100%;
+      min-height: 34px;
+      background: var(--lane-hue);
+      opacity: .9;
     }
 
-    .bubble {
-      max-width: 85%;
+    .lane-id {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: var(--lane-hue);
+      padding-left: 9px;
     }
 
-    .msg-row.user .bubble {
-      background: var(--surface);
-      padding: 12px 18px;
-      border-radius: 18px;
-      line-height: 1.5;
-    }
-
-    .msg-row.assistant .bubble {
-      font-size: 16px;
-      line-height: 1.7;
-    }
-
-    /* Markdown Styling */
-    .bubble img {
-      max-width: 100%;
-      border-radius: 8px;
-    }
-
-    .bubble table {
-      border-collapse: collapse;
-      margin: 10px 0;
-      width: 100%;
-    }
-
-    .bubble th,
-    .bubble td {
-      border: 1px solid var(--border);
-      padding: 8px;
-      text-align: left;
-    }
-
-    .bubble pre {
-      background: #000 !important;
-      border-radius: 10px;
-      margin: 16px 0;
-      position: relative;
-    }
-
-    .bubble blockquote {
-      border-left: 3px solid var(--accent);
-      padding-left: 16px;
-      margin: 10px 0;
-      color: var(--text-dim);
-    }
-
-    /* Input Dock */
-    .dock {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 0 20px 30px;
-      background: linear-gradient(to top, var(--bg) 60%, transparent);
-      display: flex;
-      justify-content: center;
-    }
-
-    .input-bar {
-      width: 100%;
-      max-width: 800px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 10px 12px 10px 20px;
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      box-shadow: var(--shadow);
-    }
-
-    .input-bar textarea {
-      flex: 1;
-      background: none;
-      border: none;
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 16px;
-      padding: 10px 0;
-      resize: none;
-      min-height: 24px;
-      max-height: 200px;
-    }
-
-    .btn-submit {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .btn-submit:disabled {
-      opacity: 0.3;
-      filter: grayscale(1);
-      cursor: default;
-    }
-
-    .overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 900;
-    }
-
-    .overlay.active {
+    .lane-model {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--ink);
       display: block;
     }
 
-    /* Loading Cursor */
-    .cursor-blink {
-      display: inline-block;
-      width: 8px;
-      height: 1.2em;
-      background: var(--accent);
-      vertical-align: middle;
-      margin-left: 2px;
-      animation: blink 0.8s infinite;
+    .lane-use {
+      font-size: 12.5px;
+      color: var(--ink-2);
     }
 
-    @keyframes blink {
+    .lane-cost {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--ink-3);
+      text-align: right;
+      padding-right: 4px;
+      white-space: nowrap;
+    }
 
-      0%,
-      100% {
-        opacity: 1;
+    .starters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 8px;
+    }
+
+    .starter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      background: var(--panel);
+      border: 1px solid var(--edge);
+      border-radius: 8px;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13.5px;
+      text-align: left;
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .starter:hover {
+      background: var(--panel-2);
+      border-color: var(--lane-hue);
+      transform: translateY(-1px);
+    }
+
+    .starter .stamp {
+      color: var(--lane-hue);
+      flex: none;
+    }
+
+    /* ══ turns ══════════════════════════════════════════════════════════ */
+    .turn {
+      margin-bottom: 28px;
+      animation: rise .22s ease-out both;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
       }
+    }
 
+    .turn.user {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .said {
+      max-width: 82%;
+      background: var(--panel-2);
+      border: 1px solid var(--edge);
+      border-radius: 10px 10px 3px 10px;
+      padding: 11px 15px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    /* ── the route slug: every answer is stamped with how it got here ── */
+    .slug {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 6px 0 10px;
+      border-bottom: 1px solid var(--edge);
+      margin-bottom: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+    }
+
+    .slug-lane {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      color: var(--lane-hue);
+    }
+
+    .slug-lane::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--lane-hue);
+      box-shadow: 0 0 9px color-mix(in srgb, var(--lane-hue) calc(var(--glow) * 100%), transparent);
+    }
+
+    /* Five segments: the complexity reading that chose this lane. */
+    .segs {
+      display: flex;
+      gap: 3px;
+    }
+
+    .seg {
+      width: 13px;
+      height: 6px;
+      border-radius: 1px;
+      background: var(--track);
+      transition: background .18s ease;
+    }
+
+    .seg.lit {
+      background: var(--lane-hue);
+    }
+
+    .slug-why {
+      color: var(--ink-2);
+    }
+
+    .slug-stat {
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .prose {
+      overflow-wrap: anywhere;
+    }
+
+    .prose>*+* {
+      margin-top: 13px;
+    }
+
+    .prose h1,
+    .prose h2,
+    .prose h3 {
+      font-family: var(--display);
+      font-variation-settings: "wdth" 92;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-top: 22px;
+    }
+
+    .prose h1 {
+      font-size: 22px;
+    }
+
+    .prose h2 {
+      font-size: 19px;
+    }
+
+    .prose h3 {
+      font-size: 16.5px;
+    }
+
+    .prose ul,
+    .prose ol {
+      padding-left: 22px;
+    }
+
+    .prose li+li {
+      margin-top: 5px;
+    }
+
+    .prose a {
+      color: var(--lane-hue, var(--lamp-2));
+      text-underline-offset: 2px;
+    }
+
+    .prose code {
+      font-family: var(--mono);
+      font-size: .87em;
+      background: var(--panel-2);
+      border: 1px solid var(--edge);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    .prose pre {
+      background: var(--panel);
+      border: 1px solid var(--edge);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .prose pre code {
+      display: block;
+      background: none;
+      border: none;
+      padding: 14px 15px;
+      overflow-x: auto;
+      font-size: 12.5px;
+      line-height: 1.65;
+    }
+
+    .copy-code {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      padding: 3px 8px;
+      background: var(--panel-3);
+      border: 1px solid var(--edge);
+      border-radius: 5px;
+      color: var(--ink-2);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      cursor: pointer;
+      opacity: 0;
+      transition: var(--snap);
+    }
+
+    .prose pre:hover .copy-code,
+    .copy-code:focus-visible {
+      opacity: 1;
+    }
+
+    /* Syntax tokens reuse the three cable hues, so code reads as part of the
+       same instrument in both themes rather than a pasted-in vendor palette. */
+    .hljs-comment,
+    .hljs-quote {
+      color: var(--ink-3);
+      font-style: italic;
+    }
+
+    .hljs-keyword,
+    .hljs-selector-tag,
+    .hljs-literal,
+    .hljs-type {
+      color: var(--lamp-3);
+    }
+
+    .hljs-string,
+    .hljs-regexp,
+    .hljs-addition {
+      color: var(--lamp-1);
+    }
+
+    .hljs-number,
+    .hljs-symbol,
+    .hljs-attr,
+    .hljs-attribute,
+    .hljs-variable,
+    .hljs-template-variable,
+    .hljs-built_in {
+      color: var(--lamp-2);
+    }
+
+    .hljs-title,
+    .hljs-name,
+    .hljs-section {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .hljs-meta,
+    .hljs-tag,
+    .hljs-punctuation {
+      color: var(--ink-2);
+    }
+
+    .hljs-deletion {
+      color: var(--danger);
+    }
+
+    .hljs-emphasis {
+      font-style: italic;
+    }
+
+    .hljs-strong {
+      font-weight: 700;
+    }
+
+    .prose blockquote {
+      border-left: 2px solid var(--lane-hue, var(--edge));
+      padding-left: 14px;
+      color: var(--ink-2);
+    }
+
+    .prose table {
+      border-collapse: collapse;
+      width: 100%;
+      display: block;
+      overflow-x: auto;
+      font-size: 13.5px;
+    }
+
+    .prose th,
+    .prose td {
+      border: 1px solid var(--edge);
+      padding: 7px 10px;
+      text-align: left;
+    }
+
+    .prose th {
+      background: var(--panel-2);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .prose img {
+      max-width: 100%;
+      border-radius: 6px;
+    }
+
+    .caret {
+      display: inline-block;
+      width: 7px;
+      height: 15px;
+      margin-left: 2px;
+      background: var(--lane-hue, var(--ink));
+      vertical-align: -2px;
+      animation: pulse .9s steps(2, start) infinite;
+    }
+
+    @keyframes pulse {
       50% {
         opacity: 0;
+      }
+    }
+
+    .acts {
+      display: flex;
+      gap: 4px;
+      margin-top: 12px;
+      opacity: 0;
+      transition: var(--snap);
+    }
+
+    .turn:hover .acts,
+    .acts:focus-within {
+      opacity: 1;
+    }
+
+    .act {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      background: none;
+      border: 1px solid var(--edge);
+      border-radius: 6px;
+      color: var(--ink-2);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .act:hover {
+      color: var(--ink);
+      background: var(--panel-2);
+    }
+
+    .act.hot {
+      color: var(--lamp-3);
+      border-color: color-mix(in srgb, var(--lamp-3) 40%, var(--edge));
+    }
+
+    .fault {
+      border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--edge));
+      background: color-mix(in srgb, var(--danger) 8%, transparent);
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: var(--ink);
+      font-size: 13.5px;
+    }
+
+    /* ══ dock ═══════════════════════════════════════════════════════════ */
+    .dock {
+      flex: none;
+      padding: 0 24px 20px;
+      background: linear-gradient(to top, var(--void) 62%, transparent);
+    }
+
+    .dock-inner {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .console {
+      background: var(--panel);
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      transition: border-color var(--snap);
+    }
+
+    .console:focus-within {
+      border-color: var(--ink-3);
+    }
+
+    .console textarea {
+      width: 100%;
+      background: none;
+      border: none;
+      resize: none;
+      color: var(--ink);
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.55;
+      padding: 14px 16px 6px;
+      max-height: 210px;
+      min-height: 26px;
+    }
+
+    .console textarea:focus {
+      outline: none;
+    }
+
+    .console textarea::placeholder {
+      color: var(--ink-3);
+    }
+
+    .console-foot {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px 8px 14px;
+    }
+
+    /* Predicted lane, updating as you type — routing shown before you commit. */
+    .predict {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .08em;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      min-width: 0;
+    }
+
+    .predict b {
+      color: var(--lane-hue, var(--ink-3));
+      font-weight: 700;
+    }
+
+    .count {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--ink-3);
+      white-space: nowrap;
+    }
+
+    .send {
+      width: 34px;
+      height: 34px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--edge);
+      border-radius: 8px;
+      background: var(--panel-3);
+      color: var(--lane-hue, var(--ink-2));
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .send:hover:not(:disabled) {
+      background: var(--lane-hue, var(--panel-3));
+      color: var(--void);
+      border-color: var(--lane-hue);
+    }
+
+    .send:disabled {
+      color: var(--ink-3);
+      cursor: not-allowed;
+    }
+
+    .send.stop {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 45%, var(--edge));
+    }
+
+    .hint {
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    /* ══ scope (router inspector) ═══════════════════════════════════════ */
+    .scope {
+      background: var(--panel);
+      border-left: 1px solid var(--edge);
+      overflow-y: auto;
+      min-height: 0;
+      z-index: 40;
+    }
+
+    .shell[data-scope="off"] .scope {
+      display: none;
+    }
+
+    .scope-sec {
+      padding: 16px;
+      border-bottom: 1px solid var(--edge);
+    }
+
+    .scope-sec>.stamp {
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .verdict {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      margin-bottom: 4px;
+    }
+
+    .verdict-lane {
+      font-family: var(--display);
+      font-variation-settings: "wdth" 86;
+      font-weight: 800;
+      font-size: 27px;
+      line-height: 1;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: var(--lane-hue, var(--ink-3));
+    }
+
+    .verdict-model {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+
+    .verdict-why {
+      font-size: 13px;
+      color: var(--ink-2);
+      margin-bottom: 13px;
+    }
+
+    /* 24-segment complexity readout — the instrument the whole app is named for. */
+    .ladder {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 7px;
+    }
+
+    .rung {
+      flex: 1;
+      height: 20px;
+      border-radius: 1px;
+      background: var(--track);
+      transition: background .2s ease, opacity .2s ease;
+    }
+
+    .rung.lit {
+      background: var(--lane-hue);
+    }
+
+    .ladder-scale {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--ink-3);
+    }
+
+    .signal {
+      display: grid;
+      grid-template-columns: 62px 1fr 26px;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+
+    .signal-track {
+      height: 5px;
+      background: var(--track);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .signal-fill {
+      display: block;
+      height: 100%;
+      background: var(--ink-3);
+      border-radius: 3px;
+      transition: width .3s ease;
+    }
+
+    .signal-val {
+      text-align: right;
+      color: var(--ink-2);
+    }
+
+    .roster-row {
+      display: grid;
+      grid-template-columns: 3px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--edge);
+    }
+
+    .roster-row:last-child {
+      border-bottom: none;
+    }
+
+    .roster-row[data-live="true"] .roster-name {
+      color: var(--ink);
+    }
+
+    .roster-pip {
+      width: 3px;
+      height: 26px;
+      border-radius: 2px;
+      background: var(--lane-hue);
+      opacity: .3;
+    }
+
+    .roster-row[data-live="true"] .roster-pip {
+      opacity: 1;
+      box-shadow: 0 0 8px color-mix(in srgb, var(--lane-hue) calc(var(--glow) * 100%), transparent);
+    }
+
+    .roster-name {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink-2);
+    }
+
+    .roster-meta {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--ink-3);
+    }
+
+    .roster-hits {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+      text-align: right;
+    }
+
+    /* ══ overlays ═══════════════════════════════════════════════════════ */
+    .scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 10, .62);
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--snap);
+    }
+
+    .scrim.on {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      position: fixed;
+      z-index: 70;
+      background: var(--panel);
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      box-shadow: var(--lift);
+      display: none;
+    }
+
+    .modal.on {
+      display: block;
+    }
+
+    .palette {
+      top: 14vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(540px, 92vw);
+      overflow: hidden;
+    }
+
+    .palette input {
+      width: 100%;
+      padding: 15px 17px;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--edge);
+      color: var(--ink);
+      font: inherit;
+      font-size: 15px;
+    }
+
+    .palette input:focus {
+      outline: none;
+    }
+
+    .cmd-list {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    .cmd {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 9px 11px;
+      border: none;
+      border-radius: 7px;
+      background: none;
+      color: var(--ink-2);
+      font: inherit;
+      font-size: 13.5px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .cmd[data-on="true"],
+    .cmd:hover {
+      background: var(--panel-3);
+      color: var(--ink);
+    }
+
+    .cmd kbd {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+      border: 1px solid var(--edge);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    .sheet {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(560px, 92vw);
+      max-height: 84vh;
+      overflow-y: auto;
+    }
+
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--edge);
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+    }
+
+    .sheet-head h2 {
+      font-family: var(--display);
+      font-variation-settings: "wdth" 88;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .field {
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--edge);
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+    }
+
+    .field-note {
+      font-size: 12.5px;
+      color: var(--ink-3);
+      margin-top: 7px;
+    }
+
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--void);
+      border: 1px solid var(--edge);
+      border-radius: 7px;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13.5px;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 92px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+
+    .slide {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+
+    /* Controls stay steel. The three cable hues mean routing and nothing else. */
+    .slide input[type="range"] {
+      flex: 1;
+      accent-color: var(--ink-2);
+    }
+
+    .slide output {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink);
+      min-width: 46px;
+      text-align: right;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .switch {
+      flex: none;
+      width: 42px;
+      height: 23px;
+      margin-top: 2px;
+      border-radius: 20px;
+      border: 1px solid var(--edge);
+      background: var(--void);
+      cursor: pointer;
+      position: relative;
+      transition: var(--snap);
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--ink-3);
+      transition: var(--snap);
+    }
+
+    .switch[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--ink) 18%, var(--void));
+      border-color: var(--ink-2);
+    }
+
+    .switch[aria-pressed="true"]::after {
+      left: 21px;
+      background: var(--ink);
+    }
+
+    .persona-set {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .persona {
+      padding: 5px 10px;
+      background: var(--void);
+      border: 1px solid var(--edge);
+      border-radius: 20px;
+      color: var(--ink-2);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: var(--snap);
+    }
+
+    .persona:hover {
+      color: var(--ink);
+      border-color: var(--ink-3);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 26px;
+      left: 50%;
+      transform: translate(-50%, 14px);
+      padding: 9px 16px;
+      background: var(--panel-3);
+      border: 1px solid var(--edge);
+      border-radius: 8px;
+      box-shadow: var(--lift);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--snap), transform var(--snap);
+      z-index: 90;
+    }
+
+    .toast.on {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .only-narrow {
+      display: none;
+    }
+
+    /* ══ responsive ═════════════════════════════════════════════════════ */
+    @media (max-width: 1180px) {
+      .shell {
+        grid-template-columns: var(--rail-w) minmax(0, 1fr) 0;
+      }
+
+      .scope {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(320px, 88vw);
+        transform: translateX(100%);
+        transition: transform .24s cubic-bezier(.2, .7, .3, 1);
+      }
+
+      .shell[data-scope="on"] .scope {
+        display: block;
+        transform: translateX(0);
+      }
+
+      .shell[data-scope="off"] .scope {
+        display: block;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .shell,
+      .shell[data-scope="off"] {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .rail {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(288px, 86vw);
+        transform: translateX(-100%);
+        transition: transform .24s cubic-bezier(.2, .7, .3, 1);
+      }
+
+      .shell[data-rail="on"] .rail {
+        transform: translateX(0);
+      }
+
+      .only-narrow {
+        display: grid;
+      }
+
+      /* The bar carries six controls at desktop width; drop the ones that
+         have a better mobile route (the palette is a keyboard affordance). */
+      .bar {
+        padding: 0 8px;
+        gap: 4px;
+      }
+
+      #btnPalette {
+        display: none;
+      }
+
+      .pos {
+        padding: 5px 8px;
+      }
+
+      .hint {
+        display: none;
+      }
+
+      .thread-wrap,
+      .hero {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .dock {
+        padding: 0 12px 12px;
+      }
+
+      .said {
+        max-width: 92%;
+      }
+
+      /* Three columns of lane detail do not fit a phone; stack them beside
+         one continuous cable bar. */
+      .lane-row {
+        grid-template-columns: 5px minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        row-gap: 3px;
+        padding-right: 14px;
+      }
+
+      .lane-bar {
+        grid-row: 1 / 4;
+      }
+
+      .lane-cost {
+        text-align: left;
+        padding-right: 0;
+      }
+
+      .slug-stat {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="app-container">
-    <aside class="sidebar" id="sidebar">
-      <div class="sb-header">
-        <div class="logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polygon
-              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-            </polygon>
+  <div class="shell" id="shell" data-scope="on" data-rail="off">
+
+    <!-- ── threads ─────────────────────────────────────────────── -->
+    <aside class="rail" id="rail">
+      <div class="rail-top">
+        <div class="mark">
+          <svg class="mark-glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M2 6h7c3 0 3 12 6 12h7" stroke="var(--lamp-1)" stroke-width="2" stroke-linecap="round" />
+            <path d="M2 12h20" stroke="var(--lamp-2)" stroke-width="2" stroke-linecap="round" />
+            <path d="M2 18h7c3 0 3-12 6-12h7" stroke="var(--lamp-3)" stroke-width="2" stroke-linecap="round" />
           </svg>
-          <span>Nova Studio</span>
+          <span>Nova</span>
         </div>
-        <button class="icon-btn" id="btnSideClose"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2.5">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg></button>
+        <button class="icon only-narrow" id="railClose" aria-label="Close threads">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
+
       <button class="btn-new" id="btnNew">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
           <path d="M12 5v14M5 12h14" />
         </svg>
-        New Protocol
+        New thread
       </button>
-      <div class="chat-list" id="chatList"></div>
-      <div style="padding: 20px; font-size: 10px; color: var(--text-dim); text-align: center;">Production v6.5 •
-        Cognitive Tier</div>
-    </aside>
 
-    <div class="overlay" id="overlay"></div>
-
-    <main class="main">
-      <header class="header">
-        <div class="nav-l">
-          <button class="icon-btn" id="btnMenu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg></button>
-          <select class="model-select" id="modelSelect">
-            <option value="Qwen/Qwen2.5-7B-Instruct">Qwen 2.5 7B (Free Tier)</option>
-            <option value="mistralai/Mistral-7B-Instruct-v0.3">Mistral 7B (Free Tier)</option>
-            <option value="HuggingFaceH4/zephyr-7b-beta">Zephyr 7B (Free Tier)</option>
-            <option value="microsoft/Phi-3-mini-4k-instruct">Phi-3 Mini (Free Tier)</option>
-          </select>
-        </div>
-        <div class="nav-r">
-          <button class="icon-btn" id="btnTheme"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg></button>
-          <div class="avatar"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg></div>
-        </div>
-      </header>
-
-      <div class="viewport" id="viewport">
-        <div class="chat-container">
-          <div id="emptyState" class="empty-state">What can I help with?</div>
-          <div id="feed"></div>
-        </div>
+      <div class="seek">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <input id="search" type="search" placeholder="Search threads" aria-label="Search threads">
       </div>
 
-      <footer class="dock">
-        <div class="input-bar">
-          <textarea id="prompt" placeholder="Ask Nova anything..." rows="1"></textarea>
-          <button class="btn-submit" id="btnSubmit" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path>
+      <div class="threads" id="threads"></div>
+
+      <div class="rail-foot">
+        <div class="meterline"><span class="stamp">Session</span><span id="statTurns">0 turns</span></div>
+        <div class="meterline"><span class="stamp">Tokens</span><span><b id="statTokens">0</b></span></div>
+        <div class="meterline"><span class="stamp">Est. spend</span><span><b id="statCost">$0.0000</b></span></div>
+      </div>
+    </aside>
+
+    <!-- ── stage ───────────────────────────────────────────────── -->
+    <main class="stage">
+      <header class="bar">
+        <div class="bar-side">
+          <button class="icon only-narrow" id="railOpen" aria-label="Open threads">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div class="selector" id="selector" role="group" aria-label="Routing mode">
+            <button class="pos" data-lane="auto" aria-pressed="true">AUTO</button>
+            <button class="pos" data-lane="L1" aria-pressed="false">L1</button>
+            <button class="pos" data-lane="L2" aria-pressed="false">L2</button>
+            <button class="pos" data-lane="L3" aria-pressed="false">L3</button>
+          </div>
+        </div>
+        <div class="bar-side">
+          <button class="icon" id="btnPalette" aria-label="Command palette" title="Commands (Ctrl K)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M7 9.5 9.5 12 7 14.5M12.5 15H17" />
+            </svg>
+          </button>
+          <button class="icon" id="btnSettings" aria-label="Settings">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+                transform="translate(.5 .5) scale(.92)" />
+            </svg>
+          </button>
+          <button class="icon" id="btnTheme" aria-label="Switch theme"></button>
+          <button class="icon" id="btnScope" aria-label="Toggle router panel" aria-pressed="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 7h6M14 7h6M4 12h12M4 17h4M12 17h8" stroke-linecap="round" />
+              <circle cx="12" cy="7" r="1.6" fill="currentColor" stroke="none" />
+              <circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none" />
+              <circle cx="10" cy="17" r="1.6" fill="currentColor" stroke="none" />
             </svg>
           </button>
         </div>
-      </footer>
+      </header>
+
+      <div class="scroll" id="scroll">
+        <section class="hero" id="hero">
+          <h1>One prompt in.<br><em>The right model out.</em></h1>
+          <p>Nova scores every turn you send, then patches it to the cheapest model that can
+            actually answer it. Override the routing any time with the switch above.</p>
+
+          <div class="board">
+            <div class="board-head">
+              <span class="stamp">Lane</span>
+              <span class="stamp">USD / 1M tokens</span>
+            </div>
+            <div id="board"></div>
+          </div>
+
+          <span class="stamp" style="display:block;margin-bottom:9px">Try one</span>
+          <div class="starters" id="starters"></div>
+        </section>
+
+        <div class="thread-wrap" id="thread" role="log" aria-live="polite" aria-label="Conversation"></div>
+      </div>
+
+      <div class="dock">
+        <div class="dock-inner">
+          <div class="console">
+            <textarea id="input" rows="1" placeholder="Ask anything — routing is automatic"
+              aria-label="Message"></textarea>
+            <div class="console-foot">
+              <div class="predict" id="predict"></div>
+              <span class="count" id="count"></span>
+              <button class="send" id="btnSend" disabled aria-label="Send message">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <path d="M5 12h13M12 5l6 7-6 7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="hint stamp">Enter sends · Shift Enter new line · Ctrl K commands</div>
+        </div>
+      </div>
     </main>
+
+    <!-- ── router inspector ────────────────────────────────────── -->
+    <aside class="scope" id="scope" aria-label="Router">
+      <div class="scope-sec">
+        <span class="stamp">Last decision</span>
+        <div class="verdict">
+          <span class="verdict-lane" id="vLane">Idle</span>
+          <span class="verdict-model" id="vModel">no turn routed yet</span>
+        </div>
+        <p class="verdict-why" id="vWhy">Send a turn and the routing shows up here.</p>
+        <div class="ladder" id="ladder"></div>
+        <div class="ladder-scale"><span>0</span><span class="stamp" id="vScore">COMPLEXITY —</span><span>100</span>
+        </div>
+      </div>
+
+      <div class="scope-sec">
+        <span class="stamp">Signals</span>
+        <div id="signals"></div>
+      </div>
+
+      <div class="scope-sec">
+        <span class="stamp">Roster</span>
+        <div id="roster"></div>
+      </div>
+
+      <div class="scope-sec">
+        <span class="stamp">Upstream</span>
+        <div class="meterline"><span>Provider</span><b id="vUpstream">—</b></div>
+        <div class="meterline"><span>Decided by</span><b id="vBy">—</b></div>
+        <div class="meterline"><span>Route time</span><b id="vLat">—</b></div>
+      </div>
+    </aside>
   </div>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ── command palette ───────────────────────────────────────── -->
+  <div class="modal palette" id="palette" role="dialog" aria-modal="true" aria-label="Commands">
+    <input id="cmdInput" type="text" placeholder="Type a command" autocomplete="off">
+    <div class="cmd-list" id="cmdList"></div>
+  </div>
+
+  <!-- ── settings ──────────────────────────────────────────────── -->
+  <div class="modal sheet" id="settings" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="sheet-head">
+      <h2>Settings</h2>
+      <button class="icon" id="settingsClose" aria-label="Close settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="field">
+      <label class="stamp" for="sysPrompt">System prompt</label>
+      <textarea id="sysPrompt" placeholder="Leave empty for no system prompt"></textarea>
+      <div class="persona-set" id="personas"></div>
+    </div>
+
+    <div class="field">
+      <div class="toggle">
+        <div>
+          <label class="stamp">Arbiter model</label>
+          <div class="field-note">gpt-oss-20b reads each turn and confirms the lane. Turn this off to
+            route on signal scoring alone — faster, slightly blunter.</div>
+        </div>
+        <button class="switch" id="tgArbiter" aria-pressed="true" aria-label="Use arbiter model"></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="toggle">
+        <div>
+          <label class="stamp">Name threads automatically</label>
+          <div class="field-note">Titles the thread from its first exchange.</div>
+        </div>
+        <button class="switch" id="tgTitle" aria-pressed="true" aria-label="Name threads automatically"></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="stamp" for="tempRange">Temperature</label>
+      <div class="slide">
+        <input type="range" id="tempRange" min="0" max="1.5" step="0.05" value="0.7">
+        <output id="tempOut">0.70</output>
+      </div>
+      <div class="field-note">Lower is steadier, higher is more varied.</div>
+    </div>
+
+    <div class="field">
+      <label class="stamp" for="maxRange">Response limit</label>
+      <div class="slide">
+        <input type="range" id="maxRange" min="512" max="8192" step="256" value="4096">
+        <output id="maxOut">4096</output>
+      </div>
+      <div class="field-note">Maximum tokens in a single answer.</div>
+    </div>
+
+    <div class="field" style="border-bottom:none">
+      <label class="stamp">Data</label>
+      <div class="field-note">Threads live in this browser only. Nothing is stored on the server.</div>
+      <div class="persona-set">
+        <button class="persona" id="btnWipe">Delete all threads</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
   <script>
-    (function () {
-      const $ = id => document.getElementById(id);
-      const STORAGE = 'nova_studio_v2';
+    (() => {
+      'use strict';
+      const $ = (id) => document.getElementById(id);
+      const KEY = 'nova.router.v1';
 
-      let state = {
-        chats: JSON.parse(localStorage.getItem(STORAGE) || '{}'),
-        activeId: localStorage.getItem(STORAGE + '_active') || null,
-        theme: localStorage.getItem(STORAGE + '_theme') || 'dark',
-        model: localStorage.getItem(STORAGE + '_model') || 'Qwen/Qwen2.5-7B-Instruct',
-        busy: false
+      /* ── roster ──────────────────────────────────────────────────────
+         Mirrors api/_provider.js. The server still has the final say on
+         which model a lane resolves to. */
+      const LANES = {
+        L1: {
+          name: 'Swift', model: 'gpt-oss-20b', size: '20B', ctx: '131K',
+          price: { in: 0.10, out: 0.50 }, hue: 'var(--lamp-1)',
+          use: 'Lookups, rewrites, short answers',
+        },
+        L2: {
+          name: 'Broad', model: 'qwen3.6-27b', size: '27B', ctx: '131K',
+          price: { in: 0.32, out: 3.20 }, hue: 'var(--lamp-2)',
+          use: 'Drafting, explanation, long context',
+        },
+        L3: {
+          name: 'Deep', model: 'gpt-oss-120b', size: '120B', ctx: '131K',
+          price: { in: 0.15, out: 0.75 }, hue: 'var(--lamp-3)',
+          use: 'Reasoning, math, code review',
+        },
+      };
+      const LANE_IDS = ['L1', 'L2', 'L3'];
+      const hueOf = (lane) => (LANES[lane] ? LANES[lane].hue : 'var(--ink-3)');
+
+      const STARTERS = [
+        { lane: 'L1', text: 'Rewrite this sentence so a customer would understand it' },
+        { lane: 'L2', text: 'Draft launch notes for a model router we just shipped' },
+        { lane: 'L3', text: 'Find the race condition in a Node.js worker pool and prove it' },
+        { lane: 'L2', text: 'Explain CRDTs to someone who ships code, not papers' },
+      ];
+
+      const PERSONAS = {
+        'Plain': 'Answer plainly. No preamble, no filler, no restating the question.',
+        'Engineer': 'You are a senior engineer. Give working code first, then a short note on trade-offs. Name the failure modes.',
+        'Editor': 'You are a line editor. Tighten prose, cut hedging, keep the writer\'s voice. Show the edit, then one sentence on why.',
+        'Tutor': 'Teach step by step. Check understanding before moving on. Use one worked example per idea.',
       };
 
-      // Setup marked
-      marked.options({ gfm: true, breaks: true, highlight: (code) => hljs.highlightAuto(code).value });
+      /* ── state ───────────────────────────────────────────────────── */
+      const defaults = {
+        threads: {},
+        activeId: null,
+        theme: null,
+        mode: 'auto',
+        scope: true,
+        system: '',
+        arbiter: true,
+        autoTitle: true,
+        temperature: 0.7,
+        maxTokens: 4096,
+      };
 
+      let state = load();
+      let stream = null;      // AbortController for the turn in flight
+      let busy = false;
+      let lastRoute = null;
+      let query = '';
+
+      function load() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+          return { ...defaults, ...saved, threads: saved.threads || {} };
+        } catch {
+          return { ...defaults };
+        }
+      }
+
+      let saveTimer = null;
       function save() {
-        localStorage.setItem(STORAGE, JSON.stringify(state.chats));
-        localStorage.setItem(STORAGE + '_active', state.activeId);
-        localStorage.setItem(STORAGE + '_theme', state.theme);
-        localStorage.setItem(STORAGE + '_model', state.model);
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          try {
+            localStorage.setItem(KEY, JSON.stringify(state));
+          } catch {
+            toast('Storage full — delete a few threads');
+          }
+        }, 180);
       }
 
-      function applyTheme(t) {
-        state.theme = t;
-        document.documentElement.setAttribute('data-theme', t);
-        $('btnTheme').innerHTML = t === 'dark'
-          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
-          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-        save();
+      const activeThread = () => state.threads[state.activeId] || null;
+
+      /* ── markdown ────────────────────────────────────────────────── */
+      if (window.marked) marked.setOptions({ gfm: true, breaks: true });
+
+      /* If the CDN is blocked or slow, answers still have to be readable.
+         This covers fences, inline code and paragraphs — nothing more. */
+      function plainMarkdown(src) {
+        const parts = escapeHtml(src).split(/```/);
+        return parts.map((chunk, i) => i % 2
+          ? `<pre><code>${chunk.replace(/^\w*\n/, '')}</code></pre>`
+          : chunk
+            .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+            .split(/\n{2,}/).filter(Boolean)
+            .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join(''),
+        ).join('');
       }
 
-      function renderSidebar() {
-        const list = $('chatList');
-        list.innerHTML = '';
-        const sorted = Object.values(state.chats).sort((a, b) => b.ts - a.ts);
+      // marked does not sanitize; strip the handful of things that matter.
+      function render(md) {
+        const html = window.marked ? marked.parse(md || '') : plainMarkdown(md || '');
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        doc.querySelectorAll('script,iframe,object,embed,form,link,style').forEach((n) => n.remove());
+        doc.querySelectorAll('*').forEach((el) => {
+          [...el.attributes].forEach((attr) => {
+            const name = attr.name.toLowerCase();
+            const value = attr.value.trim().toLowerCase();
+            if (name.startsWith('on')) el.removeAttribute(attr.name);
+            if ((name === 'href' || name === 'src') && value.startsWith('javascript:')) {
+              el.removeAttribute(attr.name);
+            }
+          });
+          if (el.tagName === 'A') {
+            el.setAttribute('target', '_blank');
+            el.setAttribute('rel', 'noopener noreferrer');
+          }
+        });
+        return doc.body.innerHTML;
+      }
 
-        sorted.forEach(c => {
-          const item = document.createElement('div');
-          item.className = `chat-item ${state.activeId === c.id ? 'active' : ''}`;
-          item.innerHTML = `
-                        <div class="title">${c.title || 'New Protocol'}</div>
-                        <button class="btn-del icon-btn" style="width:24px;height:24px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-                    `;
-          item.onclick = () => loadChat(c.id);
-          item.querySelector('.btn-del').onclick = (e) => { e.stopPropagation(); deleteChat(c.id); };
-          list.appendChild(item);
+      function decorate(scope) {
+        scope.querySelectorAll('pre code').forEach((code) => {
+          if (window.hljs) {
+            try { hljs.highlightElement(code); } catch { /* unknown language */ }
+          }
+          const pre = code.parentElement;
+          if (pre.querySelector('.copy-code')) return;
+          const btn = document.createElement('button');
+          btn.className = 'copy-code';
+          btn.textContent = 'COPY';
+          btn.onclick = () => {
+            copy(code.textContent);
+            btn.textContent = 'COPIED';
+            setTimeout(() => { btn.textContent = 'COPY'; }, 1400);
+          };
+          pre.appendChild(btn);
         });
       }
 
-      function updateEmptyState() {
-        const feed = $('feed');
-        const emptyState = $('emptyState');
-        if (feed.children.length === 0) {
-          emptyState.classList.add('active');
-        } else {
-          emptyState.classList.remove('active');
-        }
+      /* ── estimation ──────────────────────────────────────────────── */
+      const estTokens = (text) => Math.ceil((text || '').length / 4);
+
+      function costOf(lane, inTok, outTok) {
+        const p = (LANES[lane] || LANES.L2).price;
+        return (inTok / 1e6) * p.in + (outTok / 1e6) * p.out;
       }
 
-      function loadChat(id) {
+      const money = (n) => '$' + n.toFixed(n < 0.01 ? 4 : 3);
+
+      /* Mirror of the scorer in api/route.js, so the lane shown under the
+         composer matches the lane the server actually picks. Keep the two in
+         step — a preview that contradicts the answer is worse than none. */
+      const R_TERMS = ['prove', 'proof', 'derive', 'analyz', 'analys', 'compare', 'contrast',
+        'differ', 'versus', ' vs ', 'pros and cons', 'trade-off', 'tradeoff', 'evaluate',
+        'critique', 'architect', 'design', 'optimi', 'strategy', 'why does', 'why is',
+        'explain', 'step by step', 'reason', 'algorithm', 'complexity', 'theorem', 'integral',
+        'derivative', 'probability', 'benchmark', 'root cause', 'diagnose', 'debug', 'trace',
+        'plan for', 'model the', 'concurren', 'deadlock', 'race condition'];
+      const C_TERMS = ['function ', 'const ', 'class ', 'import ', 'def ', 'async ', 'return ',
+        'refactor', 'stack trace', 'traceback', 'compile', 'segfault', 'null pointer',
+        'typescript', 'javascript', 'python', 'rust', 'golang', 'sql query', 'regex', 'docker',
+        'kubernetes', 'terraform', 'api endpoint', 'unit test', 'race condition', 'worker pool',
+        'mutex', 'null reference'];
+      const O_TERMS = ['draft', 'write ', 'compose', 'blog', 'essay', 'email', 'notes', 'outline',
+        'documentation', 'report', 'proposal', 'summar', 'script for', 'copy for'];
+      const C_PATTERNS = [/```/, /\b\w+\.(js|ts|tsx|jsx|py|rs|go|java|rb|c|cpp|h|sh|sql|yml|yaml|json|css|html)\b/i,
+        /\b(npm|pip|cargo|git|curl|kubectl)\s+\w+/i, /[{};]\s*$/m];
+      const B_PATTERNS = [/\b(and also|additionally|as well as|then|after that|finally)\b/gi,
+        /^\s*(\d+[.)]|[-*])\s+/gm];
+      const P_TERMS = ["that's wrong", 'thats wrong', 'incorrect', 'not what i asked', 'try again',
+        'you missed', 'more detail', 'go deeper', 'still broken', 'doesn’t work', "doesn't work",
+        'nope', 'wrong answer', 'be more thorough', 'you forgot'];
+      const SIMPLE = [/^(hi|hey|hello|yo|thanks|thank you|ok|okay|cool|nice|got it)\b/i,
+        /^(what|who|when|where)\s+(is|are|was|were)\b/i,
+        /^(translate|summari[sz]e|rewrite|shorten|fix the grammar)\b/i];
+
+      const hits = (t, terms) => terms.reduce((n, term) => (t.includes(term) ? n + 1 : n), 0);
+      const evidence = (n, decay) => (n ? 100 * (1 - decay ** n) : 0);
+      const cap = (n) => Math.max(0, Math.min(100, Math.round(n)));
+
+      function previewLane(raw) {
+        const text = (raw || '').toLowerCase();
+        const words = text.trim().split(/\s+/).filter(Boolean).length;
+        if (!words) return null;
+
+        let reasoning = evidence(hits(text, R_TERMS), 0.55);
+        if (/[∑∫√≈≤≥π]|\b\d+\s*[\^*/]\s*\d+/.test(raw)) reasoning += 20;
+        if ((text.match(/\?/g) || []).length > 1) reasoning += 10;
+        reasoning = cap(reasoning);
+
+        const code = cap(evidence(
+          hits(text, C_TERMS) + C_PATTERNS.filter((re) => re.test(raw)).length, 0.5));
+
+        const listScore = B_PATTERNS.reduce(
+          (acc, re) => acc + Math.min(25, (text.match(re) || []).length * 9), 0);
+        const breadth = cap(Math.max(
+          Math.min(70, (words / 50) * 70) + listScore,
+          evidence(hits(text, O_TERMS), 0.6)));
+
+        let score = reasoning * 0.34 + code * 0.30 + breadth * 0.26;
+        if (reasoning && code) score += 6;
+        score += cap(evidence(hits(text, P_TERMS), 0.4)) * 0.25;
+        if (words <= 12 && !/\band\b/.test(text) && SIMPLE.some((re) => re.test(raw.trim()))) {
+          score *= 0.4;
+        }
+        score = cap(score);
+
+        let lane = 'L2';
+        if (score >= 55 || (code >= 55 && reasoning >= 35) || reasoning >= 78) lane = 'L3';
+        else if (score <= 8 && words <= 14 && code < 25) lane = 'L1';
+        return { score, lane };
+      }
+
+      /* ── static panels ───────────────────────────────────────────── */
+      function paintBoard() {
+        $('board').innerHTML = LANE_IDS.map((id) => {
+          const l = LANES[id];
+          return `<div class="lane-row" style="--lane-hue:${l.hue}">
+            <span class="lane-bar"></span>
+            <span class="lane-id">${id} ${l.name.toUpperCase()}</span>
+            <span>
+              <span class="lane-model">${l.model}</span>
+              <span class="lane-use">${l.use}</span>
+            </span>
+            <span class="lane-cost">${l.price.in.toFixed(2)} in · ${l.price.out.toFixed(2)} out</span>
+          </div>`;
+        }).join('');
+
+        $('starters').innerHTML = STARTERS.map((s, i) =>
+          `<button class="starter" data-i="${i}" style="--lane-hue:${hueOf(s.lane)}">
+             <span class="stamp">${s.lane}</span><span>${s.text}</span>
+           </button>`).join('');
+
+        $('starters').querySelectorAll('.starter').forEach((btn) => {
+          btn.onclick = () => {
+            $('input').value = STARTERS[Number(btn.dataset.i)].text;
+            resizeInput();
+            updatePredict();
+            focusInput(true);
+          };
+        });
+
+        $('ladder').innerHTML = Array.from({ length: 24 }, () => '<span class="rung"></span>').join('');
+
+        $('signals').innerHTML = ['reasoning', 'code', 'breadth', 'context'].map((k) =>
+          `<div class="signal">
+             <span>${k}</span>
+             <span class="signal-track"><span class="signal-fill" id="sig-${k}" style="width:0%"></span></span>
+             <span class="signal-val" id="sigv-${k}">—</span>
+           </div>`).join('');
+
+        $('personas').innerHTML = Object.keys(PERSONAS)
+          .map((n) => `<button class="persona" data-p="${n}">${n}</button>`).join('');
+        $('personas').querySelectorAll('.persona').forEach((btn) => {
+          btn.onclick = () => {
+            $('sysPrompt').value = PERSONAS[btn.dataset.p];
+            state.system = PERSONAS[btn.dataset.p];
+            save();
+            toast(`${btn.dataset.p} prompt loaded`);
+          };
+        });
+      }
+
+      function paintRoster() {
+        const hits = {};
+        Object.values(state.threads).forEach((t) =>
+          t.turns.forEach((m) => {
+            if (m.route) hits[m.route.lane] = (hits[m.route.lane] || 0) + 1;
+          }));
+
+        $('roster').innerHTML = LANE_IDS.map((id) => {
+          const l = LANES[id];
+          const live = lastRoute && lastRoute.lane === id;
+          const n = hits[id] || 0;
+          return `<div class="roster-row" data-live="${live}" style="--lane-hue:${l.hue}">
+            <span class="roster-pip"></span>
+            <span>
+              <span class="roster-name">${l.model}</span><br>
+              <span class="roster-meta">${id} · ${l.size} · ${l.ctx} ctx</span>
+            </span>
+            <span class="roster-hits">${n}<br><span class="roster-meta">${n === 1 ? 'turn' : 'turns'}</span></span>
+          </div>`;
+        }).join('');
+      }
+
+      /* ── router inspector ────────────────────────────────────────── */
+      function paintScope(route) {
+        const scope = $('scope');
+        if (!route) {
+          scope.style.removeProperty('--lane-hue');
+          return;
+        }
+        lastRoute = route;
+        scope.style.setProperty('--lane-hue', hueOf(route.lane));
+
+        $('vLane').textContent = `${route.lane} ${LANES[route.lane].name}`;
+        $('vModel').textContent = LANES[route.lane].model;
+        $('vWhy').textContent = route.why || '—';
+        $('vScore').textContent = `COMPLEXITY ${route.complexity}`;
+        $('vUpstream').textContent = route.upstream || '—';
+        $('vBy').textContent = route.decidedBy || '—';
+        $('vLat').textContent = route.latencyMs != null ? `${route.latencyMs} ms` : '—';
+
+        const rungs = $('ladder').children;
+        const lit = Math.round((route.complexity / 100) * rungs.length);
+        for (let i = 0; i < rungs.length; i++) rungs[i].classList.toggle('lit', i < lit);
+
+        Object.entries(route.signals || {}).forEach(([k, v]) => {
+          const bar = $(`sig-${k}`);
+          const val = $(`sigv-${k}`);
+          if (bar) {
+            bar.style.width = `${v}%`;
+            bar.style.background = hueOf(route.lane);
+          }
+          if (val) val.textContent = v;
+        });
+
+        paintRoster();
+      }
+
+      /* ── threads ─────────────────────────────────────────────────── */
+      function paintThreads() {
+        const list = $('threads');
+        const q = query.trim().toLowerCase();
+
+        let items = Object.values(state.threads);
+        if (q) {
+          items = items.filter((t) =>
+            (t.title || '').toLowerCase().includes(q) ||
+            t.turns.some((m) => m.content.toLowerCase().includes(q)));
+        }
+        items.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.ts - a.ts);
+
+        if (!items.length) {
+          list.innerHTML = `<p class="stamp" style="padding:16px 6px">${q ? 'No match' : 'No threads yet'}</p>`;
+          return;
+        }
+
+        const groups = { Pinned: [], Today: [], Earlier: [] };
+        const dayStart = new Date().setHours(0, 0, 0, 0);
+        items.forEach((t) => {
+          if (t.pinned) groups.Pinned.push(t);
+          else if (t.ts >= dayStart) groups.Today.push(t);
+          else groups.Earlier.push(t);
+        });
+
+        list.innerHTML = Object.entries(groups)
+          .filter(([, arr]) => arr.length)
+          .map(([label, arr]) => `<div class="stamp group-label">${label}</div>` + arr.map((t) => {
+            const lane = dominantLane(t);
+            return `<div class="thread-row" data-id="${t.id}" role="button" tabindex="0"
+                      aria-current="${t.id === state.activeId}" style="--lane-hue:${hueOf(lane)}">
+              <span class="thread-tick"></span>
+              <span class="thread-name">${escapeHtml(t.title || 'Untitled thread')}</span>
+              <button class="thread-act pin ${t.pinned ? 'pinned' : ''}" data-act="pin"
+                      aria-label="${t.pinned ? 'Unpin' : 'Pin'} thread">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="${t.pinned ? 'currentColor' : 'none'}"
+                     stroke="currentColor" stroke-width="2"><path d="M12 2 9 9l-6 1 5 4-2 8 6-4 6 4-2-8 5-4-6-1z"/></svg>
+              </button>
+              <button class="thread-act del" data-act="del" aria-label="Delete thread">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>`;
+          }).join('')).join('');
+
+        list.querySelectorAll('.thread-row').forEach((row) => {
+          const id = row.dataset.id;
+          const open = () => openThread(id);
+          row.onclick = (e) => {
+            const act = e.target.closest('[data-act]');
+            if (!act) return open();
+            e.stopPropagation();
+            if (act.dataset.act === 'pin') {
+              state.threads[id].pinned = !state.threads[id].pinned;
+              save(); paintThreads();
+            } else {
+              removeThread(id);
+            }
+          };
+          row.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+          };
+        });
+      }
+
+      function dominantLane(thread) {
+        const tally = {};
+        thread.turns.forEach((m) => {
+          if (m.route) tally[m.route.lane] = (tally[m.route.lane] || 0) + 1;
+        });
+        return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+      }
+
+      function openThread(id) {
         state.activeId = id;
-        const chat = state.chats[id];
-        const feed = $('feed');
-        feed.innerHTML = '';
-        chat.messages.forEach(m => appendRow(m.role, m.content));
-        renderSidebar();
         save();
-        updateEmptyState();
-        if (window.innerWidth <= 900) toggleSidebar(false);
+        paintThreads();
+        paintFeed();
+        if (window.innerWidth <= 860) setRail(false);
       }
 
-      function appendRow(role, content, stream = false) {
-        const feed = $('feed');
-        let row = feed.lastElementChild;
-
-        if (row && !row.classList.contains(role)) {
-          row = null;
-        } else if (role === 'assistant' && row && !row.classList.contains('streaming')) {
-          row = null;
-        }
-
-        if (!row) {
-          row = document.createElement('div');
-          row.className = `msg-row ${role}`;
-
-          const userIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
-          const aiIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`;
-
-          row.innerHTML = `
-                        <div class="avatar">${role === 'user' ? userIcon : aiIcon}</div>
-                        <div class="bubble">
-                            <div class="bubble-content"></div>
-                        </div>
-                    `;
-          if (role === 'user') row.innerHTML = `<div class="bubble"><div class="bubble-content"></div></div><div class="avatar">${userIcon}</div>`;
-          feed.appendChild(row);
-        }
-
-        if (stream) {
-          row.classList.add('streaming');
-        } else {
-          row.classList.remove('streaming');
-        }
-
-        const target = row.querySelector('.bubble-content');
-        if (role === 'user') {
-          target.textContent = content;
-        } else {
-          target.innerHTML = marked.parse(content + (stream ? '<span class="cursor-blink"></span>' : ''));
-          if (!stream) target.querySelectorAll('pre code').forEach(c => hljs.highlightElement(c));
-        }
-
-        $('viewport').scrollTo({ top: $('viewport').scrollHeight, behavior: 'auto' });
-        updateEmptyState();
+      function newThread() {
+        state.activeId = null;
+        save();
+        paintThreads();
+        paintFeed();
+        if (window.innerWidth <= 860) setRail(false);
+        focusInput(true);
       }
 
-      async function submit() {
-        const txt = $('prompt').value.trim();
-        if (!txt || state.busy) return;
+      function removeThread(id) {
+        delete state.threads[id];
+        if (state.activeId === id) state.activeId = null;
+        save();
+        paintThreads();
+        paintFeed();
+        paintStats();
+        toast('Thread deleted');
+      }
 
-        if (!state.activeId || !state.chats[state.activeId]) {
-          const id = 'chat_' + Date.now();
-          state.chats[id] = { id, title: txt.substring(0, 30), messages: [], ts: Date.now() };
+      /* ── feed ────────────────────────────────────────────────────── */
+      function paintFeed() {
+        const thread = activeThread();
+        const feed = $('thread');
+        feed.innerHTML = '';
+        $('hero').style.display = thread && thread.turns.length ? 'none' : 'block';
+        if (!thread || !thread.turns.length) {
+          $('scroll').scrollTop = 0; // land on the hero, not below it
+          paintStats();
+          return;
+        }
+        thread.turns.forEach((turn, i) => feed.appendChild(buildTurn(turn, i)));
+        decorate(feed);
+        paintStats();
+        jump();
+      }
+
+      function buildTurn(turn, index) {
+        const el = document.createElement('article');
+        el.className = `turn ${turn.role}`;
+        el.dataset.index = index;
+
+        if (turn.role === 'user') {
+          const said = document.createElement('div');
+          said.className = 'said';
+          said.textContent = turn.content;
+          el.appendChild(said);
+
+          const acts = document.createElement('div');
+          acts.className = 'acts';
+          acts.style.justifyContent = 'flex-end';
+          acts.appendChild(action('Edit', () => editTurn(index)));
+          acts.appendChild(action('Copy', () => { copy(turn.content); toast('Copied'); }));
+          el.appendChild(acts);
+          return el;
+        }
+
+        el.style.setProperty('--lane-hue', hueOf(turn.route?.lane));
+        el.appendChild(buildSlug(turn));
+
+        const prose = document.createElement('div');
+        prose.className = 'prose';
+        if (turn.error) {
+          prose.innerHTML = `<div class="fault">${escapeHtml(turn.content)}</div>`;
+        } else {
+          prose.innerHTML = render(turn.content);
+        }
+        el.appendChild(prose);
+
+        if (!turn.streaming) {
+          const acts = document.createElement('div');
+          acts.className = 'acts';
+          acts.appendChild(action('Copy', () => { copy(turn.content); toast('Copied'); }));
+          acts.appendChild(action('Retry', () => regenerate(index)));
+          if (turn.route && turn.route.lane !== 'L3') {
+            acts.appendChild(action('Escalate to L3', () => regenerate(index, 'L3'), true));
+          }
+          el.appendChild(acts);
+        }
+        return el;
+      }
+
+      function buildSlug(turn) {
+        const slug = document.createElement('div');
+        slug.className = 'slug';
+        const r = turn.route;
+
+        if (!r) {
+          slug.innerHTML = `<span class="slug-lane" style="--lane-hue:var(--ink-3)">ROUTING</span>
+            <span class="segs">${'<span class="seg"></span>'.repeat(5)}</span>
+            <span class="slug-why">scoring the turn…</span>`;
+          return slug;
+        }
+
+        const lit = Math.max(1, Math.round((r.complexity / 100) * 5));
+        const segs = Array.from({ length: 5 }, (_, i) =>
+          `<span class="seg${i < lit ? ' lit' : ''}"></span>`).join('');
+
+        const stats = [];
+        if (turn.ms) stats.push(`${(turn.ms / 1000).toFixed(1)}s`);
+        if (turn.tokens) stats.push(`${turn.tokens} tok`);
+        if (turn.cost) stats.push(money(turn.cost));
+
+        slug.innerHTML = `
+          <span class="slug-lane">${r.lane} ${LANES[r.lane].name.toUpperCase()}</span>
+          <span class="segs" title="Complexity ${r.complexity}">${segs}</span>
+          <span>${LANES[r.lane].model}</span>
+          <span class="slug-why">${escapeHtml(r.why || '')}</span>
+          ${stats.length ? `<span class="slug-stat">${stats.join(' · ')}</span>` : ''}`;
+        return slug;
+      }
+
+      function action(label, fn, hot) {
+        const b = document.createElement('button');
+        b.className = 'act' + (hot ? ' hot' : '');
+        b.textContent = label;
+        b.onclick = fn;
+        return b;
+      }
+
+      function paintStats() {
+        const thread = activeThread();
+        const turns = thread ? thread.turns.filter((t) => t.role === 'assistant').length : 0;
+        let tokens = 0;
+        let cost = 0;
+        Object.values(state.threads).forEach((t) => t.turns.forEach((m) => {
+          tokens += m.tokens || estTokens(m.content);
+          cost += m.cost || 0;
+        }));
+        $('statTurns').innerHTML = `<b>${turns}</b> ${turns === 1 ? 'turn' : 'turns'}`;
+        $('statTokens').textContent = tokens.toLocaleString();
+        $('statCost').textContent = money(cost);
+      }
+
+      function jump() {
+        const scroll = $('scroll');
+        scroll.scrollTop = scroll.scrollHeight;
+      }
+
+      /* Focusing a textarea scrolls its scrollable ancestors — including the
+         body, which Chromium will still shift under `overflow: hidden`. On a
+         phone it also opens the keyboard over the page, so skip it there. */
+      function focusInput(force) {
+        if (!force && window.innerWidth <= 860) return;
+        $('input').focus({ preventScroll: true });
+      }
+
+      /* ── send ────────────────────────────────────────────────────── */
+      async function send(text) {
+        if (busy) return;
+        const prompt = (text ?? $('input').value).trim();
+        if (!prompt) return;
+
+        if (!activeThread()) {
+          const id = 'th_' + Date.now().toString(36);
+          state.threads[id] = { id, title: prompt.slice(0, 42), turns: [], ts: Date.now(), pinned: false };
           state.activeId = id;
         }
+        const thread = activeThread();
+        thread.turns.push({ role: 'user', content: prompt });
 
-        const chat = state.chats[state.activeId];
-        chat.messages.push({ role: 'user', content: txt });
-        appendRow('user', txt);
+        $('input').value = '';
+        resizeInput();
+        updatePredict();
+        paintFeed();
+        paintThreads();
 
-        $('prompt').value = '';
-        $('prompt').style.height = 'auto';
-        state.busy = true;
-        $('btnSubmit').disabled = true;
+        await answer(thread);
+      }
 
-        let assistantMsg = { role: 'assistant', content: '' };
-        chat.messages.push(assistantMsg);
-        appendRow('assistant', '', true);
+      /* Ask the router which lane, then stream from that lane. */
+      async function answer(thread, forceLane) {
+        const feed = $('thread');
+        const slot = { role: 'assistant', content: '', route: null, streaming: true };
+        thread.turns.push(slot);
 
+        const el = buildTurn(slot, thread.turns.length - 1);
+        feed.appendChild(el);
+        jump();
+        setBusy(true);
+
+        // `slot` is already on the end of the thread — drop it, keep the rest.
+        const history = thread.turns
+          .slice(0, -1)
+          .filter((t) => t.content && !t.error)
+          .map(({ role, content }) => ({ role, content }));
+        const ask = [...history].reverse().find((t) => t.role === 'user')?.content || '';
+
+        // 1. route
+        let route;
+        const pinned = forceLane || (state.mode !== 'auto' ? state.mode : null);
+        if (pinned) {
+          route = {
+            lane: pinned,
+            complexity: forceLane ? 100 : 50,
+            why: forceLane ? 'Escalated by you' : 'Lane pinned by you',
+            decidedBy: 'manual',
+            signals: lastRoute?.signals || {},
+            latencyMs: 0,
+            upstream: lastRoute?.upstream || '—',
+          };
+        } else {
+          route = await routeTurn(ask, history);
+        }
+
+        slot.route = route;
+        paintScope(route);
+        el.style.setProperty('--lane-hue', hueOf(route.lane));
+        el.replaceChild(buildSlug(slot), el.querySelector('.slug'));
+
+        // 2. answer
+        const started = performance.now();
+        const prose = el.querySelector('.prose');
+        stream = new AbortController();
+        let text = '';
+        let usage = null;
+        let frame = null;
+
+        const paint = () => {
+          frame = null;
+          prose.innerHTML = render(text) + '<span class="caret"></span>';
+          jump();
+        };
+
+        try {
+          const messages = state.system
+            ? [{ role: 'system', content: state.system }, ...history]
+            : history;
+
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages,
+              lane: route.lane,
+              stream: true,
+              parameters: { temperature: state.temperature, max_tokens: state.maxTokens },
+            }),
+            signal: stream.signal,
+          });
+
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || `Request failed (${res.status})`);
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          // SSE frames can split across chunks; keep a buffer and only
+          // consume complete lines.
+          outer: while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            let cut;
+            while ((cut = buffer.indexOf('\n')) !== -1) {
+              const line = buffer.slice(0, cut).trim();
+              buffer = buffer.slice(cut + 1);
+              if (!line.startsWith('data:')) continue;
+              const payload = line.slice(5).trim();
+              if (payload === '[DONE]') break outer;
+              try {
+                const json = JSON.parse(payload);
+                if (json.error) throw new Error(json.error);
+                if (json.usage) usage = json.usage;
+                const delta = json.choices?.[0]?.delta?.content;
+                if (delta) {
+                  text += delta;
+                  if (!frame) frame = requestAnimationFrame(paint);
+                }
+              } catch (err) {
+                if (err instanceof SyntaxError) continue; // partial JSON
+                throw err;
+              }
+            }
+          }
+
+          if (frame) cancelAnimationFrame(frame);
+          slot.content = text || '(empty response)';
+          slot.ms = Math.round(performance.now() - started);
+          slot.tokens = usage?.total_tokens || estTokens(history.map((m) => m.content).join('') + text);
+          slot.cost = costOf(
+            route.lane,
+            usage?.prompt_tokens ?? estTokens(history.map((m) => m.content).join('')),
+            usage?.completion_tokens ?? estTokens(text),
+          );
+        } catch (err) {
+          if (frame) cancelAnimationFrame(frame);
+          if (err.name === 'AbortError') {
+            slot.content = text || 'Stopped.';
+            slot.ms = Math.round(performance.now() - started);
+          } else {
+            slot.content = err.message || 'The request failed.';
+            slot.error = true;
+          }
+        } finally {
+          stream = null;
+          slot.streaming = false;
+          thread.ts = Date.now();
+          save();
+          setBusy(false);
+          paintFeed();
+          paintThreads();
+        }
+
+        if (state.autoTitle && !thread.named && thread.turns.length >= 2 && !slot.error) {
+          nameThread(thread);
+        }
+      }
+
+      async function routeTurn(ask, history) {
+        const fallback = () => {
+          const guess = previewLane(ask) || { lane: 'L2', score: 50 };
+          return {
+            lane: guess.lane,
+            complexity: guess.score,
+            why: 'Routed locally — router unreachable',
+            decidedBy: 'local',
+            signals: {},
+            latencyMs: 0,
+            upstream: '—',
+          };
+        };
+        try {
+          const res = await fetch('/api/route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: ask, history, useArbiter: state.arbiter }),
+          });
+          if (!res.ok) return fallback();
+          const data = await res.json();
+          return LANES[data.lane] ? data : fallback();
+        } catch {
+          return fallback();
+        }
+      }
+
+      async function nameThread(thread) {
         try {
           const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              messages: chat.messages.slice(0, -1), // Send history except the empty assistant msg
-              model: state.model,
-              stream: true
-            })
+              intent: 'title',
+              messages: thread.turns.slice(0, 2).map(({ role, content }) => ({ role, content })),
+            }),
           });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || 'System link failed');
+          const data = await res.json();
+          if (data.title) {
+            thread.title = data.title;
+            thread.named = true;
+            save();
+            paintThreads();
           }
+        } catch { /* the fallback title is fine */ }
+      }
 
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let fullText = '';
+      /* Drop everything from `index` onward and re-answer the turn before it. */
+      function regenerate(index, forceLane) {
+        const thread = activeThread();
+        if (!thread || busy) return;
+        thread.turns = thread.turns.slice(0, index);
+        paintFeed();
+        answer(thread, forceLane);
+      }
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+      function editTurn(index) {
+        const thread = activeThread();
+        if (!thread || busy) return;
+        $('input').value = thread.turns[index].content;
+        thread.turns = thread.turns.slice(0, index);
+        save();
+        paintFeed();
+        resizeInput();
+        updatePredict();
+        focusInput(true);
+      }
 
-            const chunk = decoder.decode(value);
-            // Parse HF Router stream chunks (SSE format)
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                if (line.includes('[DONE]')) break;
-                try {
-                  const json = JSON.parse(line.substring(6));
-                  const content = json.choices?.[0]?.delta?.content || '';
-                  fullText += content;
-                  assistantMsg.content = fullText;
-                  appendRow('assistant', fullText, true);
-                } catch (e) { }
-              }
-            }
+      function setBusy(on) {
+        busy = on;
+        const btn = $('btnSend');
+        btn.classList.toggle('stop', on);
+        btn.disabled = on ? false : !$('input').value.trim();
+        btn.setAttribute('aria-label', on ? 'Stop generating' : 'Send message');
+        btn.innerHTML = on
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h13M12 5l6 7-6 7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+
+      /* ── composer ────────────────────────────────────────────────── */
+      function resizeInput() {
+        const ta = $('input');
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 210) + 'px';
+      }
+
+      function updatePredict() {
+        const text = $('input').value;
+        const dock = $('predict');
+        const shell = document.querySelector('.console');
+
+        if (state.mode !== 'auto') {
+          const l = LANES[state.mode];
+          dock.innerHTML = `Pinned <b>${state.mode} ${l.name}</b> · ${l.model}`;
+          shell.style.setProperty('--lane-hue', l.hue);
+        } else {
+          const guess = previewLane(text);
+          if (!guess) {
+            dock.innerHTML = 'Auto routing';
+            shell.style.removeProperty('--lane-hue');
+          } else {
+            dock.innerHTML = `Predicted <b>${guess.lane} ${LANES[guess.lane].name}</b> · complexity ${guess.score}`;
+            shell.style.setProperty('--lane-hue', hueOf(guess.lane));
           }
+        }
 
-          // Final render to remove cursor and highlight code
-          appendRow('assistant', fullText, false);
-          chat.ts = Date.now();
-          save();
-        } catch (e) {
-          assistantMsg.content = `Error: ${e.message}`;
-          appendRow('assistant', assistantMsg.content, false);
-        } finally {
-          state.busy = false;
-          $('btnSubmit').disabled = false;
-          renderSidebar();
+        const n = estTokens(text);
+        $('count').textContent = n ? `~${n} tok` : '';
+        $('btnSend').disabled = busy ? false : !text.trim();
+      }
+
+      /* ── modes, theme, panels ────────────────────────────────────── */
+      function setMode(mode) {
+        state.mode = mode;
+        save();
+        const hue = mode === 'auto' ? null : hueOf(mode);
+        $('selector').querySelectorAll('.pos').forEach((b) => {
+          const on = b.dataset.lane === mode;
+          b.setAttribute('aria-pressed', String(on));
+          if (on && hue) b.style.setProperty('--lane-hue', hue);
+          else b.style.removeProperty('--lane-hue');
+        });
+        updatePredict();
+      }
+
+      function setTheme(theme) {
+        state.theme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        $('btnTheme').innerHTML = theme === 'dark'
+          ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8" stroke-linecap="round"/></svg>'
+          : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+        save();
+      }
+
+      function setScope(on) {
+        state.scope = on;
+        $('shell').dataset.scope = on ? 'on' : 'off';
+        $('btnScope').setAttribute('aria-pressed', String(on));
+        if (window.innerWidth <= 1180) setScrim(on);
+        save();
+      }
+
+      function setRail(on) {
+        $('shell').dataset.rail = on ? 'on' : 'off';
+        setScrim(on);
+      }
+
+      function setScrim(on) {
+        $('scrim').classList.toggle('on', on);
+      }
+
+      /* ── palette ─────────────────────────────────────────────────── */
+      const COMMANDS = [
+        { label: 'New thread', keys: 'Ctrl N', run: newThread },
+        { label: 'Route automatically', run: () => setMode('auto') },
+        { label: 'Pin lane L1 — gpt-oss-20b', run: () => setMode('L1') },
+        { label: 'Pin lane L2 — qwen3.6-27b', run: () => setMode('L2') },
+        { label: 'Pin lane L3 — gpt-oss-120b', run: () => setMode('L3') },
+        { label: 'Toggle router panel', run: () => setScope(!state.scope) },
+        { label: 'Switch theme', run: () => setTheme(state.theme === 'dark' ? 'light' : 'dark') },
+        { label: 'Open settings', run: () => openModal('settings') },
+        { label: 'Export thread as Markdown', run: () => exportThread('md') },
+        { label: 'Export thread as JSON', run: () => exportThread('json') },
+        { label: 'Rename this thread', run: renameThread },
+        { label: 'Delete this thread', run: () => state.activeId && removeThread(state.activeId) },
+      ];
+
+      let cmdIndex = 0;
+
+      function paintCommands() {
+        const q = $('cmdInput').value.toLowerCase();
+        const hits = COMMANDS.filter((c) => c.label.toLowerCase().includes(q));
+        cmdIndex = Math.min(cmdIndex, Math.max(0, hits.length - 1));
+        $('cmdList').innerHTML = hits.length
+          ? hits.map((c, i) => `<button class="cmd" data-i="${i}" data-on="${i === cmdIndex}">
+               <span>${c.label}</span>${c.keys ? `<kbd>${c.keys}</kbd>` : ''}</button>`).join('')
+          : '<p class="stamp" style="padding:14px">No command matches</p>';
+        $('cmdList').querySelectorAll('.cmd').forEach((btn) => {
+          btn.onclick = () => { closeModals(); hits[Number(btn.dataset.i)].run(); };
+        });
+        return hits;
+      }
+
+      function openModal(id) {
+        closeModals();
+        $(id).classList.add('on');
+        setScrim(true);
+        if (id === 'palette') {
+          $('cmdInput').value = '';
+          cmdIndex = 0;
+          paintCommands();
+          $('cmdInput').focus();
         }
       }
 
-      function deleteChat(id) {
-        delete state.chats[id];
-        if (state.activeId === id) {
-          state.activeId = null;
-          $('feed').innerHTML = '';
-          updateEmptyState();
+      function closeModals() {
+        $('palette').classList.remove('on');
+        $('settings').classList.remove('on');
+        setRail(false);
+        if (window.innerWidth <= 1180 && state.scope) setScope(false);
+        setScrim(false);
+      }
+
+      /* ── export / misc ───────────────────────────────────────────── */
+      function exportThread(format) {
+        const thread = activeThread();
+        if (!thread) return toast('Open a thread first');
+
+        let body;
+        let name;
+        if (format === 'json') {
+          body = JSON.stringify(thread, null, 2);
+          name = `${slugify(thread.title)}.json`;
+        } else {
+          body = `# ${thread.title}\n\n` + thread.turns.map((t) => t.role === 'user'
+            ? `**You**\n\n${t.content}`
+            : `**${t.route ? `${t.route.lane} · ${LANES[t.route.lane].model}` : 'Assistant'}**\n\n${t.content}`)
+            .join('\n\n---\n\n') + '\n';
+          name = `${slugify(thread.title)}.md`;
         }
-        save(); renderSidebar();
+
+        const url = URL.createObjectURL(new Blob([body], { type: 'text/plain' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast(`Exported ${name}`);
       }
 
-      function toggleSidebar(show) {
-        $('sidebar').classList.toggle('open', show);
-        $('overlay').classList.toggle('active', show);
+      function renameThread() {
+        const thread = activeThread();
+        if (!thread) return toast('Open a thread first');
+        const next = window.prompt('Thread name', thread.title);
+        if (next === null) return;
+        thread.title = next.trim() || thread.title;
+        thread.named = true;
+        save();
+        paintThreads();
       }
 
-      $('btnMenu').onclick = () => toggleSidebar(true);
-      $('btnSideClose').onclick = () => toggleSidebar(false);
-      $('overlay').onclick = () => toggleSidebar(false);
+      const slugify = (s) => (s || 'thread').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'thread';
 
-      $('btnNew').onclick = () => {
-        state.activeId = null;
-        $('feed').innerHTML = '';
-        renderSidebar();
-        updateEmptyState();
-        if (window.innerWidth <= 900) toggleSidebar(false);
-        $('prompt').focus();
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      function copy(text) {
+        navigator.clipboard?.writeText(text).catch(() => { });
+      }
+
+      let toastTimer = null;
+      function toast(message) {
+        const el = $('toast');
+        el.textContent = message;
+        el.classList.add('on');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('on'), 2200);
+      }
+
+      /* ── wiring ──────────────────────────────────────────────────── */
+      $('btnNew').onclick = newThread;
+      $('railOpen').onclick = () => setRail(true);
+      $('railClose').onclick = () => setRail(false);
+      $('btnScope').onclick = () => setScope(!state.scope);
+      $('btnTheme').onclick = () => setTheme(state.theme === 'dark' ? 'light' : 'dark');
+      $('btnPalette').onclick = () => openModal('palette');
+      $('btnSettings').onclick = () => openModal('settings');
+      $('settingsClose').onclick = closeModals;
+      $('scrim').onclick = closeModals;
+
+      $('search').oninput = (e) => { query = e.target.value; paintThreads(); };
+
+      $('selector').onclick = (e) => {
+        const pos = e.target.closest('.pos');
+        if (pos) setMode(pos.dataset.lane);
       };
 
-      $('btnTheme').onclick = () => applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+      $('input').oninput = () => { resizeInput(); updatePredict(); };
+      $('input').onkeydown = (e) => {
+        // On touch-sized screens Enter belongs to the keyboard's newline;
+        // sending is the button's job.
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.innerWidth > 860) {
+          e.preventDefault();
+          if (!busy) send();
+        }
+      };
 
-      $('modelSelect').onchange = (e) => {
-        state.model = e.target.value;
+      $('btnSend').onclick = () => {
+        if (busy) { stream?.abort(); return; }
+        send();
+      };
+
+      $('cmdInput').oninput = () => { cmdIndex = 0; paintCommands(); };
+      $('cmdInput').onkeydown = (e) => {
+        const hits = paintCommands();
+        if (e.key === 'ArrowDown') { e.preventDefault(); cmdIndex = Math.min(cmdIndex + 1, hits.length - 1); paintCommands(); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); cmdIndex = Math.max(cmdIndex - 1, 0); paintCommands(); }
+        if (e.key === 'Enter' && hits[cmdIndex]) { e.preventDefault(); closeModals(); hits[cmdIndex].run(); }
+      };
+
+      document.addEventListener('keydown', (e) => {
+        const meta = e.metaKey || e.ctrlKey;
+        if (meta && e.key.toLowerCase() === 'k') { e.preventDefault(); openModal('palette'); }
+        if (meta && e.key.toLowerCase() === 'n') { e.preventDefault(); newThread(); }
+        if (meta && e.key === '/') { e.preventDefault(); focusInput(true); }
+        if (e.key === 'Escape') closeModals();
+      });
+
+      // settings
+      $('sysPrompt').oninput = (e) => { state.system = e.target.value; save(); };
+      $('tgArbiter').onclick = () => {
+        state.arbiter = !state.arbiter;
+        $('tgArbiter').setAttribute('aria-pressed', String(state.arbiter));
         save();
       };
-
-      $('prompt').oninput = () => {
-        $('prompt').style.height = 'auto';
-        $('prompt').style.height = $('prompt').scrollHeight + 'px';
-        $('btnSubmit').disabled = !$('prompt').value.trim() || state.busy;
+      $('tgTitle').onclick = () => {
+        state.autoTitle = !state.autoTitle;
+        $('tgTitle').setAttribute('aria-pressed', String(state.autoTitle));
+        save();
+      };
+      $('tempRange').oninput = (e) => {
+        state.temperature = Number(e.target.value);
+        $('tempOut').textContent = state.temperature.toFixed(2);
+        save();
+      };
+      $('maxRange').oninput = (e) => {
+        state.maxTokens = Number(e.target.value);
+        $('maxOut').textContent = state.maxTokens;
+        save();
+      };
+      $('btnWipe').onclick = () => {
+        if (!confirm('Delete every thread in this browser? This cannot be undone.')) return;
+        state.threads = {};
+        state.activeId = null;
+        save();
+        paintThreads(); paintFeed(); paintStats(); paintRoster();
+        toast('All threads deleted');
       };
 
-      $('prompt').onkeydown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 900) {
-          e.preventDefault(); submit();
-        }
-      };
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 1180) setScrim(false);
+      });
 
-      $('btnSubmit').onclick = submit;
-
-      // Init
-      applyTheme(state.theme);
-      $('modelSelect').value = state.model;
-      if (state.activeId && state.chats[state.activeId]) loadChat(state.activeId);
-      else {
-        renderSidebar();
-        updateEmptyState();
-      }
-
+      /* ── boot ────────────────────────────────────────────────────── */
+      paintBoard();
+      paintRoster();
+      setTheme(state.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+      setMode(state.mode);
+      setScope(window.innerWidth > 1180 ? state.scope : false);
+      $('sysPrompt').value = state.system;
+      $('tgArbiter').setAttribute('aria-pressed', String(state.arbiter));
+      $('tgTitle').setAttribute('aria-pressed', String(state.autoTitle));
+      $('tempRange').value = state.temperature;
+      $('tempOut').textContent = state.temperature.toFixed(2);
+      $('maxRange').value = state.maxTokens;
+      $('maxOut').textContent = state.maxTokens;
+      paintThreads();
+      paintFeed();
+      updatePredict();
+      focusInput();
     })();
   </script>
 </body>

@@ -1,108 +1,163 @@
 /**
- * Vercel serverless function: proxies chat requests to Hugging Face.
- * This version supports streaming, multiple models, and full conversation history.
+ * Chat completion proxy. Talks to Groq when GROQ_API_KEY is set, otherwise to
+ * the Hugging Face router. The upstream key never reaches the browser.
+ *
+ * Accepts a lane id (L1 / L2 / L3) rather than a raw model string, so the
+ * server stays the single source of truth for which models are in the roster.
+ *
+ * Intents:
+ *   chat  (default) — stream or buffer an assistant turn
+ *   title           — one short thread title, always on the cheapest lane
  */
 
-// We use the modern router endpoint for serverless tier compatibility
-const ROUTER_URL = 'https://router.huggingface.co/v1/chat/completions';
+import {
+  LANES,
+  resolveUpstream,
+  modelForLane,
+  normalizeLane,
+  sanitizeMessages,
+  callUpstream,
+  describeUpstreamError,
+  handleCors,
+} from './_provider.js';
+
+const TITLE_SYSTEM =
+  'Write a title for this conversation: 2 to 5 words, sentence case, no quotes, no trailing period. Reply with the title only.';
 
 export default async function handler(req, res) {
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
+  if (handleCors(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const token = process.env.HF_TOKEN;
-  if (!token) {
-    return res.status(500).json({ error: 'Server configuration error: HF_TOKEN is missing' });
+  const upstream = resolveUpstream();
+  if (!upstream) {
+    return res.status(500).json({
+      error:
+        'No upstream configured. Add GROQ_API_KEY (recommended) or HF_TOKEN to your environment variables.',
+    });
   }
 
   try {
     const {
       messages,
-      model = 'meta-llama/Llama-3.1-8B-Instruct',
+      lane: rawLane,
+      model,
+      intent = 'chat',
       parameters = {},
-      stream = false
+      stream = false,
     } = req.body || {};
 
-    if (!messages || !Array.isArray(messages)) {
+    const history = sanitizeMessages(messages);
+    if (!history.length) {
       return res.status(400).json({ error: 'Missing or invalid messages array' });
     }
 
-    let targetModel = model;
-    if (targetModel.includes(':hf-inference')) {
-      targetModel = targetModel.replace(':hf-inference', '');
+    if (intent === 'title') {
+      return await handleTitle(res, upstream, history);
     }
+
+    const laneId = normalizeLane(rawLane) || normalizeLane(model) || 'L2';
+    const lane = LANES[laneId];
 
     const payload = {
-      model: targetModel,
-      messages: messages,
-      max_tokens: parameters.max_new_tokens || parameters.max_tokens || 2048,
-      temperature: parameters.temperature ?? 0.7,
-      top_p: parameters.top_p ?? 0.95,
-      stream: stream
+      model: modelForLane(laneId, upstream.name),
+      messages: history,
+      max_tokens: clampNumber(
+        parameters.max_tokens ?? parameters.max_new_tokens,
+        256,
+        lane.maxTokens,
+        lane.maxTokens,
+      ),
+      temperature: clampNumber(parameters.temperature, 0, 2, lane.temperature),
+      top_p: clampNumber(parameters.top_p, 0.1, 1, 0.95),
+      stream,
     };
 
-    const response = await fetch(ROUTER_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      if (response.status === 503) {
-        return res.status(503).json({ error: "Nova is currently initializing this cognitive model. Please retry in 30-60 seconds." });
-      }
-      const errorData = await response.text();
-      return res.status(response.status).json({
-        error: `API Error: ${response.status} - ${errorData.substring(0, 100)}`
-      });
+    // Groq reports token usage in a trailing stream chunk when asked to.
+    if (stream && upstream.name === 'groq') {
+      payload.stream_options = { include_usage: true };
     }
 
-    // CASE 1: Streaming
+    const response = await callUpstream(upstream, payload);
+
+    if (!response.ok) {
+      const message = await describeUpstreamError(response);
+      return res.status(response.status).json({ error: message, lane: laneId });
+    }
+
+    res.setHeader('X-Nova-Lane', laneId);
+    res.setHeader('X-Nova-Model', lane.label);
+    res.setHeader('X-Nova-Upstream', upstream.name);
+
     if (stream) {
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        res.write(chunk);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(decoder.decode(value, { stream: true }));
+          if (typeof res.flush === 'function') res.flush();
+        }
+      } catch (streamErr) {
+        // The client hung up, or the upstream cut the connection mid-answer.
+        res.write(
+          `data: ${JSON.stringify({ error: streamErr.message || 'Stream interrupted' })}\n\n`,
+        );
       }
       return res.end();
     }
 
-    // CASE 2: Normal Response
     const data = await response.json();
-    const generatedText = data.choices?.[0]?.message?.content || '';
-
-    // Maintain legacy format compatibility for now if needed, 
-    // but better to move to standard OpenAI format.
-    // Let's return both for safety.
     return res.status(200).json({
       choices: data.choices,
-      generated_text: generatedText // legacy field
+      usage: data.usage || null,
+      lane: laneId,
+      model: lane.label,
+      upstream: upstream.name,
+      generated_text: data.choices?.[0]?.message?.content || '',
     });
-
   } catch (err) {
-    console.error('Proxy Error:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error while processing request' });
+    console.error('Chat proxy error:', err);
+    return res
+      .status(500)
+      .json({ error: err.message || 'The request failed before it reached the model.' });
   }
+}
+
+async function handleTitle(res, upstream, history) {
+  const seed = history.filter((m) => m.role !== 'system').slice(0, 2);
+  const response = await callUpstream(upstream, {
+    model: modelForLane('L1', upstream.name),
+    messages: [
+      { role: 'system', content: TITLE_SYSTEM },
+      { role: 'user', content: seed.map((m) => `${m.role}: ${m.content}`).join('\n\n').slice(0, 2000) },
+    ],
+    max_tokens: 24,
+    temperature: 0.3,
+    stream: false,
+  });
+
+  if (!response.ok) {
+    return res.status(200).json({ title: null });
+  }
+
+  const data = await response.json();
+  const title = (data.choices?.[0]?.message?.content || '')
+    .replace(/^["'\s]+|["'\s.]+$/g, '')
+    .slice(0, 48);
+
+  return res.status(200).json({ title: title || null });
+}
+
+function clampNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
 }
