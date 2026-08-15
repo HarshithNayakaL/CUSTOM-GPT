@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="description" content="Nova routes every prompt to the model that suits it: gpt-oss-20b, qwen3.6-27b, or gpt-oss-120b.">
   <title>Nova — Model Router</title>
 
@@ -78,13 +78,25 @@
       padding: 0;
     }
 
-    html,
-    body {
+    html {
       height: 100%;
-      overflow: hidden;
     }
 
+    /* position:fixed takes body out of the page's own scroll entirely, so a
+       mobile browser can never "scroll the page" to reveal a focused input —
+       it has nothing to scroll — and has to actually resize the visible area
+       instead. That's what stops the keyboard from panning the whole layout
+       into a blank void. The height cascade covers three tiers of support:
+       100% for anything ancient, 100dvh for the spec-level dynamic viewport
+       unit, and --app-h (set from JS via visualViewport) as the most
+       reliable answer where dvh doesn't track the on-screen keyboard. */
     body {
+      position: fixed;
+      inset: 0;
+      height: 100%;
+      height: 100dvh;
+      height: var(--app-h, 100dvh);
+      overflow: hidden;
       background: var(--bg);
       color: var(--fg);
       font-family: var(--sans);
@@ -1898,6 +1910,24 @@
       'use strict';
       const $ = (id) => document.getElementById(id);
       const KEY = 'nova.router.v1';
+
+      /* 100dvh alone isn't consistently keyboard-aware across mobile
+         browsers — some only shrink it for browser chrome, not the OS
+         keyboard. visualViewport is the one API that always tracks the
+         actual visible area, so it drives --app-h as the authoritative
+         height (see body's height cascade in the stylesheet). */
+      function syncViewportHeight() {
+        const vv = window.visualViewport;
+        const h = vv ? vv.height : window.innerHeight;
+        document.documentElement.style.setProperty('--app-h', `${h}px`);
+      }
+      syncViewportHeight();
+      if (window.visualViewport) {
+        visualViewport.addEventListener('resize', syncViewportHeight);
+        visualViewport.addEventListener('scroll', syncViewportHeight);
+      }
+      window.addEventListener('resize', syncViewportHeight);
+      window.addEventListener('orientationchange', syncViewportHeight);
 
       /* Icons come from the Hugeicons set, inlined as a sprite above. */
       const ic = (name, size = 18) =>
