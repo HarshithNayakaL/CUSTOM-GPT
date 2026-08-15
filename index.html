@@ -171,7 +171,10 @@
 
     /* ══ rail ═══════════════════════════════════════════════════════════ */
     .rail {
-      z-index: 40;
+      /* Above .scrim (60) so the backdrop blur sits behind the panel, not
+         on top of it, when this slides in as a fixed overlay on narrow
+         screens. Below .modal (70) so the palette/settings sheet still wins. */
+      z-index: 65;
     }
 
     .rail-top {
@@ -1032,9 +1035,20 @@
     }
 
     /* ══ router panel ═══════════════════════════════════════════════════ */
+    /* Hidden on desktop, where the toggle button in the header stays reachable.
+       On mobile the panel covers the header too (same full-height takeover as
+       .rail), so it needs its own close affordance — this is it. */
+    .scope-top {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 4px 8px 10px;
+    }
+
     .scope {
       overflow-y: auto;
-      z-index: 40;
+      /* Same reasoning as .rail above — must sit above .scrim (60). */
+      z-index: 65;
       padding: 14px;
       gap: 10px;
     }
@@ -1558,6 +1572,10 @@
         display: grid;
       }
 
+      .scope-top {
+        display: flex;
+      }
+
       .board {
         grid-template-columns: 1fr;
       }
@@ -1751,6 +1769,12 @@
 
     <!-- ── router panel ────────────────────────────────────────── -->
     <aside class="pane scope" id="scope" aria-label="Router">
+      <div class="scope-top only-narrow">
+        <span class="tag">Router</span>
+        <button class="icon-btn" id="scopeClose" aria-label="Close router panel">
+          <svg class="ic" width="20" height="20"><use href="#i-close" /></svg>
+        </button>
+      </div>
       <div class="scope-block verdict idle" id="verdict">
         <div class="verdict-head"><span>Last decision</span><span id="vBy"></span></div>
         <div class="verdict-name" id="vLane">Idle</div>
@@ -2802,6 +2826,7 @@
       $('railOpen').onclick = () => setRail(true);
       $('railClose').onclick = () => setRail(false);
       $('btnScope').onclick = () => setScope(!state.scope);
+      $('scopeClose').onclick = () => setScope(false);
       $('btnTheme').onclick = () => setTheme(state.theme === 'dark' ? 'light' : 'dark');
       $('btnPalette').onclick = () => openModal('palette');
       $('btnSettings').onclick = () => openModal('settings');
