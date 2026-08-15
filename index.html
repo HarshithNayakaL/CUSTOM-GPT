@@ -92,7 +92,13 @@
        reliable answer where dvh doesn't track the on-screen keyboard. */
     body {
       position: fixed;
-      inset: 0;
+      left: 0;
+      right: 0;
+      /* top defaults to 0 like inset would, but stays overridable — some
+         browsers keep the layout viewport full-height and PAN it instead of
+         resizing when the keyboard opens, which --app-h alone can't catch
+         since offsetTop is a position, not a size. --app-top corrects it. */
+      top: var(--app-top, 0px);
       height: 100%;
       height: 100dvh;
       height: var(--app-h, 100dvh);
@@ -456,7 +462,10 @@
     .wrap {
       max-width: 760px;
       margin: 0 auto;
-      padding: 8px 28px 24px;
+      /* The extra bottom margin is a deliberate buffer above the composer —
+         insurance against a keyboard-open re-pin landing a frame late, not
+         load-bearing on its own. */
+      padding: 8px 28px 40px;
     }
 
     /* ══ hero ═══════════════════════════════════════════════════════════ */
@@ -1917,11 +1926,32 @@
       const $ = (id) => document.getElementById(id);
       const KEY = 'nova.router.v1';
 
+      /* Unconditional — always scroll to the true bottom. Deliberately has
+         no "near bottom?" guard of its own: the moment the keyboard shrinks
+         .scroll, the very distance such a guard would check against balloons
+         because previously-hidden overflow content gets revealed by the
+         shrink itself — checking that distance *after* the shrink makes the
+         check fail exactly when a pin is most needed. Any threshold decision
+         belongs at the call site, using numbers read before the shrink. */
+      function pinBottom() {
+        const scroll = $('scroll');
+        // .scroll has scroll-behavior: smooth for the normal send/stream
+        // flow, where an animated glide is the point. Here it works against
+        // us — plain scrollTop respects that CSS and glides over several
+        // hundred ms, stacking an animation on top of the keyboard's own,
+        // which stretches the exact overlap window this exists to close.
+        // scrollTo(..., 'instant') explicitly bypasses it.
+        if (scroll) scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' });
+      }
+
       /* 100dvh alone isn't consistently keyboard-aware across mobile
          browsers — some only shrink it for browser chrome, not the OS
          keyboard. visualViewport is the one API that always tracks the
          actual visible area, so it drives --app-h as the authoritative
-         height (see body's height cascade in the stylesheet). */
+         height (see body's height cascade in the stylesheet). Some browsers
+         also PAN the layout viewport instead of resizing it when the
+         keyboard opens — offsetTop catches that case, correcting body's
+         position the same way --app-h corrects its size. */
       function syncViewportHeight() {
         const scroll = $('scroll');
         // Read before the height changes — clientHeight after would already
@@ -1930,17 +1960,15 @@
           && scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 48;
 
         const vv = window.visualViewport;
-        const h = vv ? vv.height : window.innerHeight;
-        document.documentElement.style.setProperty('--app-h', `${h}px`);
+        document.documentElement.style.setProperty('--app-h', `${vv ? vv.height : window.innerHeight}px`);
+        document.documentElement.style.setProperty('--app-top', `${vv ? vv.offsetTop : 0}px`);
 
         // The keyboard opening shrinks .scroll's visible height but never
         // moves scrollTop on its own, so content that was already scrolled
         // to the bottom ends up with its tail — the action row under the
-        // last answer — hidden behind the composer. Re-pin to bottom only
-        // when the user was already there; never yank someone reading
-        // earlier messages down just because the keyboard opened.
+        // last answer — hidden behind the composer.
         if (wasAtBottom) {
-          requestAnimationFrame(() => { scroll.scrollTop = scroll.scrollHeight; });
+          requestAnimationFrame(pinBottom);
         }
       }
       syncViewportHeight();
@@ -2906,6 +2934,21 @@
       };
 
       $('input').oninput = () => { resizeInput(); updatePredict(); };
+      $('input').onfocus = () => {
+        // Focusing the composer is what triggers the on-screen keyboard in
+        // the first place — don't wait for a visualViewport event to notice
+        // and catch up after the fact. Decide once, before the keyboard has
+        // moved anything (same reasoning as syncViewportHeight above), then
+        // force that same decision through the keyboard's ~300ms slide-in
+        // animation — re-deriving "near bottom" at each delayed call would
+        // hit the identical trap pinBottom's own comment describes.
+        const scroll = $('scroll');
+        const wasAtBottom = scroll
+          && scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 48;
+        if (!wasAtBottom) return;
+        pinBottom();
+        [50, 150, 300].forEach((ms) => setTimeout(pinBottom, ms));
+      };
       $('input').onkeydown = (e) => {
         // On touch-sized screens Enter belongs to the keyboard's newline;
         // sending is the button's job.
